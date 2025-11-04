@@ -1,0 +1,1 @@
+// Skopiuj zawartość dto.ts z frontendu

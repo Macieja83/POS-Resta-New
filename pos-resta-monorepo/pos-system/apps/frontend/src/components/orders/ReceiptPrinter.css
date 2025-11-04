@@ -1,0 +1,442 @@
+/* Receipt Printer Styles */
+.receipt-printer-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.receipt-printer-modal {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  max-width: 90vw;
+  max-height: 90vh;
+  width: 600px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.receipt-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.receipt-header h2 {
+  margin: 0;
+  color: #333;
+  font-size: 1.5rem;
+}
+
+.receipt-header-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.print-btn-header {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.print-btn-header:hover {
+  background: #0056b3;
+  transform: translateY(-1px);
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #666;
+  padding: 5px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.close-btn:hover {
+  background-color: #e9ecef;
+}
+
+.receipt-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.receipt-paper {
+  background: white;
+  border: 1px solid #ddd;
+  padding: 20px;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1.4;
+  max-width: 400px;
+  margin: 0 auto;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Print styles */
+@media print {
+  /* Hide all navigation and app elements */
+  .navigation,
+  .nav-bar,
+  .header,
+  .top-bar,
+  .app-header,
+  .main-navigation,
+  .sidebar,
+  .filters-section,
+  .tabs-section,
+  .page-header,
+  .user-info-header,
+  .logout-btn-header,
+  .main-actions,
+  .action-card,
+  .home-page,
+  .orders-map-page,
+  .orders-list-page,
+  .order-summary-page,
+  .menu-management-page,
+  .users-page,
+  .settings-page,
+  .login-page,
+  .health-check-page {
+    display: none !important;
+  }
+  
+  /* Hide the receipt modal overlay and show only content */
+  .receipt-printer-overlay {
+    position: static;
+    background: none;
+  }
+  
+  .receipt-printer-modal {
+    box-shadow: none;
+    border-radius: 0;
+    max-width: none;
+    max-height: none;
+    width: auto;
+  }
+  
+  .receipt-header {
+    display: none !important;
+  }
+  
+  .receipt-content {
+    padding: 0;
+    overflow: visible;
+  }
+  
+  .receipt-paper {
+    border: none;
+    box-shadow: none;
+    margin: 0;
+    padding: 10px;
+    max-width: none;
+  }
+  
+  /* Ensure only receipt content is visible */
+  body {
+    margin: 0;
+    padding: 0;
+  }
+  
+  /* Hide any other app elements */
+  * {
+    visibility: hidden;
+  }
+  
+  .receipt-printer-overlay,
+  .receipt-printer-overlay * {
+    visibility: visible;
+  }
+  
+  .receipt-printer-overlay {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+}
+
+.receipt-header-content {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.receipt-header-content h1 {
+  font-size: 18px;
+  font-weight: bold;
+  margin: 0 0 10px 0;
+  color: #000;
+}
+
+.receipt-header-content p {
+  margin: 2px 0;
+  font-size: 12px;
+  color: #333;
+}
+
+.receipt-header-content hr {
+  border: none;
+  border-top: 1px dashed #333;
+  margin: 10px 0;
+}
+
+.receipt-customer {
+  margin-bottom: 20px;
+}
+
+.receipt-customer h3 {
+  font-size: 14px;
+  font-weight: bold;
+  margin: 0 0 10px 0;
+  text-transform: uppercase;
+  color: #000;
+}
+
+.receipt-customer p {
+  margin: 3px 0;
+  font-size: 12px;
+}
+
+.receipt-items {
+  margin-bottom: 20px;
+}
+
+.receipt-items h3 {
+  font-size: 14px;
+  font-weight: bold;
+  margin: 0 0 15px 0;
+  text-transform: uppercase;
+  color: #000;
+}
+
+.receipt-item {
+  margin-bottom: 15px;
+}
+
+.item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 5px;
+}
+
+.item-name {
+  font-weight: bold;
+  flex: 1;
+  font-size: 13px;
+}
+
+.item-quantity {
+  font-weight: bold;
+  margin: 0 10px;
+  font-size: 12px;
+}
+
+.item-total {
+  font-weight: bold;
+  font-size: 13px;
+  min-width: 60px;
+  text-align: right;
+}
+
+.item-detail {
+  display: flex;
+  justify-content: space-between;
+  margin: 2px 0;
+  font-size: 11px;
+  color: #666;
+}
+
+.detail-label {
+  font-weight: bold;
+}
+
+.detail-value {
+  color: #333;
+}
+
+.half-half-details {
+  margin: 5px 0;
+  padding-left: 10px;
+  border-left: 2px solid #ddd;
+}
+
+.half-detail {
+  display: flex;
+  justify-content: space-between;
+  margin: 2px 0;
+  font-size: 11px;
+}
+
+.half-label {
+  font-weight: bold;
+  color: #666;
+}
+
+.half-dish {
+  color: #333;
+}
+
+.item-addons,
+.half-addons {
+  margin: 5px 0;
+  padding-left: 10px;
+}
+
+.addon-item {
+  display: flex;
+  justify-content: space-between;
+  margin: 2px 0;
+  font-size: 11px;
+  color: #666;
+}
+
+.addon-name {
+  flex: 1;
+}
+
+.addon-quantity {
+  margin: 0 5px;
+  font-weight: bold;
+}
+
+.addon-price {
+  font-weight: bold;
+  color: #333;
+  min-width: 50px;
+  text-align: right;
+}
+
+.item-ingredients {
+  margin: 5px 0;
+  padding-left: 10px;
+}
+
+.ingredients-label {
+  font-size: 11px;
+  font-weight: bold;
+  color: #666;
+  display: block;
+  margin-bottom: 3px;
+}
+
+.ingredient-item {
+  font-size: 11px;
+  color: #333;
+  margin-right: 10px;
+}
+
+.ingredient-item.removed {
+  color: #999;
+  text-decoration: line-through;
+}
+
+.half-addons-label {
+  font-size: 11px;
+  font-weight: bold;
+  color: #666;
+  display: block;
+  margin-bottom: 3px;
+}
+
+.item-separator {
+  border: none;
+  border-top: 1px dashed #ccc;
+  margin: 10px 0;
+}
+
+.receipt-summary {
+  margin-top: 20px;
+}
+
+.receipt-summary hr {
+  border: none;
+  border-top: 1px solid #333;
+  margin: 10px 0;
+}
+
+.total-line {
+  display: flex;
+  justify-content: space-between;
+  font-size: 16px;
+  font-weight: bold;
+  margin: 10px 0;
+}
+
+.total-label {
+  text-transform: uppercase;
+}
+
+.total-amount {
+  color: #000;
+}
+
+.receipt-footer {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 12px;
+  color: #333;
+}
+
+.receipt-footer p {
+  margin: 5px 0;
+}
+
+/* Komentarze do dań na bonie */
+.item-notes {
+  margin-top: 8px;
+  padding: 8px;
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.notes-label {
+  font-weight: 600;
+  color: #495057;
+  margin-right: 8px;
+}
+
+.notes-text {
+  color: #6c757d;
+  font-style: italic;
+}
+
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .receipt-printer-modal {
+    width: 95vw;
+    max-height: 95vh;
+  }
+  
+  .receipt-paper {
+    max-width: 100%;
+    font-size: 12px;
+  }
+  
+}

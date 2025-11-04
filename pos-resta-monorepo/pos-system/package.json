@@ -1,0 +1,52 @@
+{
+  "name": "pos-system",
+  "version": "1.0.0",
+  "description": "Modern POS System with Node.js backend and React frontend",
+  "private": true,
+  "type": "commonjs",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run predev && npm-run-all --parallel dev:backend dev:frontend",
+    "dev:backend": "npm run dev --workspace=apps/backend",
+    "dev:frontend": "npm run dev --workspace=apps/frontend",
+    "predev": "node scripts/kill-ports.mjs",
+    "doctor": "tsx scripts/doctor.ts",
+    "fix:cache": "rimraf node_modules apps/*/node_modules packages/*/node_modules package-lock.json && npm install",
+    "fix:prisma": "npm run db:generate --workspace=apps/backend",
+    "build": "npm run build --workspaces --if-present",
+    "build:frontend": "npm run build --workspace=apps/frontend",
+    "build:backend": "npm run build --workspace=apps/backend",
+    "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "db:migrate": "npm run db:migrate --workspace=apps/backend",
+    "db:seed": "npm run db:seed --workspace=apps/backend",
+    "db:generate": "npm run db:generate --workspace=apps/backend",
+    "db:studio": "npm run db:studio --workspace=apps/backend",
+    "clean": "rimraf node_modules apps/*/node_modules packages/*/node_modules && npm install",
+    "vercel:build": "npm run build:frontend && npm run build:backend"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "concurrently": "^8.2.2",
+    "cross-env": "^7.0.3",
+    "eslint": "^8.55.0",
+    "npm-run-all": "^4.1.5",
+    "prettier": "^3.1.0",
+    "rimraf": "^5.0.5",
+    "tsx": "^4.6.0",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=9.0.0"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.16.2",
+    "postgres": "^3.4.7",
+    "prisma": "^6.16.2"
+  }
+}

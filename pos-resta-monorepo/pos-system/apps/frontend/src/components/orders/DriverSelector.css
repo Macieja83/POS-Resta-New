@@ -1,0 +1,128 @@
+.driver-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background-color: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+  font-size: 0.875rem;
+}
+
+.driver-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.label {
+  font-weight: 500;
+  color: #495057;
+  min-width: 60px;
+}
+
+.assigned-driver {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #d4edda;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid #c3e6cb;
+}
+
+.driver-name {
+  color: #155724;
+  font-weight: 500;
+}
+
+.unassign-btn {
+  background: none;
+  border: none;
+  color: #721c24;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-size: 0.75rem;
+  line-height: 1;
+  transition: background-color 0.15s ease-in-out;
+}
+
+.unassign-btn:hover {
+  background-color: #f8d7da;
+}
+
+.unassign-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.no-driver {
+  color: #6c757d;
+  font-style: italic;
+}
+
+.driver-options {
+  display: flex;
+  gap: 8px;
+}
+
+.driver-select {
+  flex: 1;
+  padding: 6px 8px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  background-color: white;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.driver-select:focus {
+  outline: none;
+  border-color: #80bdff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.driver-select:disabled {
+  background-color: #e9ecef;
+  cursor: not-allowed;
+}
+
+.loading,
+.assigning {
+  color: #6c757d;
+  font-style: italic;
+  text-align: center;
+  padding: 8px;
+}
+
+.error {
+  color: #dc3545;
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  border-radius: 4px;
+  padding: 8px;
+  font-size: 0.8rem;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .driver-selector {
+    padding: 8px;
+  }
+  
+  .driver-info {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  
+  .label {
+    min-width: auto;
+  }
+  
+  .assigned-driver {
+    width: 100%;
+    justify-content: space-between;
+  }
+}

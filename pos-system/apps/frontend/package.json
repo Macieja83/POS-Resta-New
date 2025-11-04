@@ -1,0 +1,53 @@
+{
+  "name": "@pos-system/frontend",
+  "version": "1.0.0",
+  "description": "POS System Frontend",
+  "type": "module",
+  "scripts": {
+    "dev": "cross-env CHOKIDAR_USEPOLLING=1 vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --report-unused-disable-directives --max-warnings 200",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest run --coverage",
+    "vercel-build": "npm run build"
+  },
+  "dependencies": {
+    "@pos-system/shared": "workspace:*",
+    "@tanstack/react-query": "^5.8.0",
+    "@types/leaflet": "^1.9.20",
+    "@types/qrcode": "^1.5.5",
+    "leaflet": "^1.9.4",
+    "qrcode": "^1.5.4",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-leaflet": "^4.2.1",
+    "react-router-dom": "^6.20.0",
+    "zod": "^3.22.4",
+    "zustand": "^4.4.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^8.57.1",
+    "@testing-library/jest-dom": "^6.1.4",
+    "@testing-library/react": "^14.1.2",
+    "@testing-library/user-event": "^14.5.1",
+    "@types/react": "^18.2.37",
+    "@types/react-dom": "^18.2.15",
+    "@typescript-eslint/eslint-plugin": "^6.10.0",
+    "@typescript-eslint/parser": "^6.10.0",
+    "@vitejs/plugin-react": "^4.1.1",
+    "autoprefixer": "^10.4.16",
+    "eslint": "^8.53.0",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.4",
+    "jsdom": "^23.0.1",
+    "postcss": "^8.4.32",
+    "tailwindcss": "^3.3.6",
+    "typescript": "^5.2.2",
+    "vite": "^5.0.0",
+    "vitest": "^1.0.0"
+  }
+}

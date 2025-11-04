@@ -1,0 +1,219 @@
+.order-status-change-modal-overlay {
+  position: fixed;
+  top: 5.44rem;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  z-index: 10000;
+  padding: 20px;
+  padding-top: 2rem;
+}
+
+.order-status-change-modal {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  max-width: 500px;
+  width: 100%;
+  max-height: calc(100vh - 5.44rem - 2rem);
+  overflow-y: auto;
+  position: relative;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 24px 0 24px;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 24px;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #6b7280;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.close-btn:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.modal-body {
+  padding: 0 24px 24px 24px;
+}
+
+.completion-section,
+.payment-section {
+  margin-bottom: 32px;
+}
+
+.completion-section h3,
+.payment-section h3 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.payment-method-label {
+  font-size: 14px;
+  color: #6b7280;
+  margin-bottom: 12px;
+}
+
+.completion-buttons {
+  display: flex;
+  gap: 16px;
+}
+
+.completion-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 16px;
+  border: 2px solid;
+  border-radius: 8px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  font-weight: 500;
+  min-height: 80px;
+  justify-content: center;
+}
+
+.completion-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.completion-btn.selected {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.completion-icon {
+  font-size: 24px;
+  margin-bottom: 8px;
+}
+
+.completion-label {
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.payment-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+.payment-btn {
+  flex: 1;
+  padding: 12px 16px;
+  border: 2px solid #2233AA;
+  border-radius: 8px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  text-align: center;
+}
+
+.payment-btn:hover {
+  background: #f0f9ff;
+  border-color: #1a2a8a;
+}
+
+.payment-btn.selected {
+  background: #2233AA;
+  color: white;
+  border-color: #2233AA;
+}
+
+.payment-label {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.modal-footer {
+  padding: 16px 24px 24px 24px;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: center;
+}
+
+.confirm-btn {
+  background: #2233AA;
+  color: white;
+  border: none;
+  padding: 16px 48px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 140px;
+}
+
+.confirm-btn:hover:not(:disabled) {
+  background: #1a2a8a;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.confirm-btn:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Responsive design */
+@media (max-width: 640px) {
+  .order-status-change-modal {
+    margin: 10px;
+    max-height: 95vh;
+  }
+  
+  .modal-header,
+  .modal-body,
+  .modal-footer {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  
+  .completion-buttons {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .payment-buttons {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .completion-btn {
+    min-height: 60px;
+  }
+}

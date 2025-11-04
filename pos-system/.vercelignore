@@ -1,0 +1,5 @@
+# Ignore during Vercel deployment
+.git
+node_modules
+*.md
+!README.md

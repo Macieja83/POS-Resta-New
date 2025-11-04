@@ -1,0 +1,492 @@
+.delivery-zone-manager {
+  display: flex;
+  height: 80vh;
+  background: white;
+  position: relative;
+  overflow: hidden;
+}
+
+.zone-controls {
+  width: 350px;
+  padding: 1.5rem;
+  background: #f8fafc;
+  border-right: 1px solid #e2e8f0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 100;
+  margin: 0;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+}
+
+.zone-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.zone-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1a202c;
+}
+
+.add-zone-btn {
+  background: #2233AA;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.add-zone-btn:hover:not(:disabled) {
+  background: #1a2a8a;
+  transform: translateY(-1px);
+}
+
+.add-zone-btn:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+.zone-sort {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.zone-sort label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.zone-sort select {
+  padding: 0.25rem 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.sort-arrows {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.sort-arrows button {
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  padding: 0.25rem 0.5rem;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.sort-arrows button:hover {
+  background: #e5e7eb;
+}
+
+.drawing-controls {
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 6px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.drawing-controls input {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  margin-bottom: 0.75rem;
+  font-size: 0.9rem;
+}
+
+.drawing-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.drawing-controls p {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #92400e;
+  font-style: italic;
+}
+
+.zone-edit-panel {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.zone-edit-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.zone-name-input {
+  flex: 1;
+  padding: 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: 600;
+  margin-right: 0.5rem;
+}
+
+.zone-edit-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.zone-status {
+  margin-bottom: 1rem;
+}
+
+.zone-status label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+}
+
+.zone-status input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #2233AA;
+}
+
+.zone-pricing {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.pricing-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pricing-row label {
+  min-width: 180px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.pricing-row input {
+  flex: 1;
+  padding: 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.pricing-row span {
+  font-size: 0.9rem;
+  color: #6b7280;
+  min-width: 20px;
+}
+
+.zones-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.zone-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.zone-item:hover {
+  border-color: #2233AA;
+  box-shadow: 0 2px 4px rgba(34, 51, 170, 0.1);
+}
+
+.zone-item.selected {
+  border-color: #2233AA;
+  background: #f0f4ff;
+  box-shadow: 0 2px 8px rgba(34, 51, 170, 0.2);
+}
+
+.zone-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.zone-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.zone-name {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #1a202c;
+  margin-bottom: 0.25rem;
+}
+
+.zone-area {
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.zone-actions {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.delete-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  transition: background-color 0.2s ease;
+}
+
+.delete-btn:hover {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.zone-map {
+  flex: 1;
+  position: relative;
+  margin-left: 350px;
+  height: 100%;
+  min-height: 500px;
+  z-index: 1;
+  overflow: hidden;
+}
+
+.zone-map .leaflet-container {
+  height: 100% !important;
+  width: 100% !important;
+  min-height: 500px;
+}
+
+/* Custom square icon for markers */
+.custom-square-icon {
+  background-color: white;
+  border: 1px solid #00BFFF; /* Light blue border to match the drawing polygon */
+  border-radius: 2px;
+  width: 10px !important; /* Ensure size matches iconSize */
+  height: 10px !important; /* Ensure size matches iconSize */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* Zone point controls */
+.zone-point-controls {
+  margin: 1rem 0;
+  padding: 1rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.add-point-btn {
+  background: #2233AA;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.add-point-btn:hover:not(:disabled) {
+  background: #1a2a8a;
+  transform: translateY(-1px);
+}
+
+.add-point-btn:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+.adding-point-info {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: #dbeafe;
+  border-radius: 6px;
+  border: 1px solid #93c5fd;
+}
+
+.adding-point-info p {
+  margin: 0 0 0.5rem 0;
+  color: #1e40af;
+  font-size: 0.9rem;
+}
+
+/* Loading and error states */
+.loading-state, .error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 2rem;
+  text-align: center;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e2e8f0;
+  border-top: 4px solid #2233AA;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.error-state p {
+  color: #ef4444;
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+}
+
+.retry-btn {
+  background: #2233AA;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.retry-btn:hover {
+  background: #1a2a8a;
+  transform: translateY(-1px);
+}
+
+.save-btn {
+  background: #10b981;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.save-btn:hover {
+  background: #059669;
+  transform: translateY(-1px);
+}
+
+.cancel-btn {
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cancel-btn:hover {
+  background: #dc2626;
+  transform: translateY(-1px);
+}
+
+/* Responsive design */
+@media (max-width: 1024px) {
+  .delivery-zone-manager {
+    flex-direction: column;
+    height: auto;
+  }
+  
+  .zone-controls {
+    position: relative;
+    width: 100%;
+    max-height: 50vh;
+    left: auto;
+    top: auto;
+    bottom: auto;
+  }
+  
+  .zone-map {
+    margin-left: 0;
+    height: 50vh;
+  }
+}
+
+@media (max-width: 768px) {
+  .zone-controls {
+    padding: 1rem;
+  }
+  
+  .zone-header {
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: stretch;
+  }
+  
+  .zone-edit-header {
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: stretch;
+  }
+  
+  .zone-name-input {
+    margin-right: 0;
+  }
+  
+  .pricing-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.25rem;
+  }
+  
+  .pricing-row label {
+    min-width: auto;
+  }
+}

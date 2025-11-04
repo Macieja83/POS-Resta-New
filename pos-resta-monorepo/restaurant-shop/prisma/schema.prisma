@@ -1,0 +1,249 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  role          Role      @default(CUSTOMER)
+  addresses     Address[]
+  orders        Order[]
+  accounts      Account[]
+  sessions      Session[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+enum Role {
+  CUSTOMER
+  ADMIN
+  MANAGER
+}
+
+model Category {
+  id        String    @id @default(cuid())
+  name      String
+  slug      String    @unique
+  position  Int       @default(0)
+  products  Product[]
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Product {
+  id          String           @id @default(cuid())
+  name        String
+  slug        String           @unique
+  description String?
+  imageUrl    String?
+  vatRate     Decimal          // np. 0.08, 0.23
+  isActive    Boolean          @default(true)
+  categoryId  String
+  category    Category         @relation(fields: [categoryId], references: [id])
+  variants    Variant[]
+  modifiers   ModifierGroup[]  @relation("ProductModifiers")
+  prepTimeMin Int?             // czas przygotowania w minutach
+  allergens   String           // lista alergenów (JSON string)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+}
+
+model Variant {
+  id        String  @id @default(cuid())
+  name      String  // np. Mała/Średnia/Duża
+  price     Decimal
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  isActive  Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ModifierGroup {
+  id         String          @id @default(cuid())
+  name       String
+  minSelect  Int             @default(0)
+  maxSelect  Int             @default(0) // 0 = bez limitu
+  required   Boolean         @default(false)
+  items      ModifierItem[]
+  products   Product[]       @relation("ProductModifiers")
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+}
+
+model ModifierItem {
+  id      String        @id @default(cuid())
+  name    String
+  price   Decimal       @default(0)
+  groupId String
+  group   ModifierGroup @relation(fields: [groupId], references: [id])
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+}
+
+model Coupon {
+  id         String    @id @default(cuid())
+  code       String    @unique
+  percentOff Int?
+  amountOff  Decimal?
+  active     Boolean   @default(true)
+  validFrom  DateTime?
+  validTo    DateTime?
+  minCart    Decimal?  // minimalna wartość koszyka
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}
+
+model Address {
+  id        String  @id @default(cuid())
+  userId    String?
+  user      User?   @relation(fields: [userId], references: [id])
+  line1     String
+  line2     String?
+  city      String
+  postal    String
+  notes     String?
+  lat       Decimal?
+  lng       Decimal?
+  orders    Order[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum FulfillmentType {
+  DELIVERY
+  PICKUP
+}
+
+enum OrderStatus {
+  DRAFT
+  PENDING_PAYMENT
+  PAID
+  ACCEPTED
+  IN_KITCHEN
+  OUT_FOR_DELIVERY
+  COMPLETED
+  CANCELED
+}
+
+model Order {
+  id             String           @id @default(cuid())
+  number         String           @unique
+  userId         String?
+  user           User?            @relation(fields: [userId], references: [id])
+  status         OrderStatus      @default(DRAFT)
+  fulfillment    FulfillmentType
+  addressId      String?
+  address        Address?         @relation(fields: [addressId], references: [id])
+  items          OrderItem[]
+  subtotal       Decimal
+  deliveryFee    Decimal          @default(0)
+  tip            Decimal          @default(0)
+  discountTotal  Decimal          @default(0)
+  taxTotal       Decimal          @default(0)
+  total          Decimal
+  paymentRef     String?
+  slotAt         DateTime?        // wybrany slot czasowy
+  notes          String?          // notatki do zamówienia
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id])
+  productId String
+  variantId String?
+  name      String
+  variant   String?
+  unitPrice Decimal
+  quantity  Int
+  vatRate   Decimal
+  modifiers Json    // snapshot wybranych dodatków
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model DeliveryZone {
+  id          String  @id @default(cuid())
+  name        String
+  radiusKm    Decimal // uproszczony model - promień w km
+  centerLat   Decimal
+  centerLng   Decimal
+  fee         Decimal @default(0)
+  minCart     Decimal @default(0)
+  freeOver    Decimal @default(0)
+  isActive    Boolean @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model OpeningHour {
+  id       String @id @default(cuid())
+  weekday  Int    // 0-6 (niedziela = 0)
+  openAt   String // "10:00"
+  closeAt  String // "22:00"
+  isClosed Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model HolidayException {
+  id       String    @id @default(cuid())
+  date     DateTime
+  isClosed Boolean   @default(true)
+  openAt   String?
+  closeAt  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+

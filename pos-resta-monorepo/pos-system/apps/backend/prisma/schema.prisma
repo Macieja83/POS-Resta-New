@@ -1,0 +1,306 @@
+generator client {
+  provider   = "prisma-client-js"
+  engineType = "binary"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_DATABASE_URL")
+}
+
+model Customer {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String
+  email     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  orders    Order[]
+
+  @@map("customers")
+}
+
+model Address {
+  id         String     @id @default(cuid())
+  street     String
+  city       String
+  postalCode String
+  latitude   Float?
+  longitude  Float?
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  deliveries Delivery[]
+
+  @@map("addresses")
+}
+
+model Order {
+  id                 String      @id @default(cuid())
+  orderNumber        String      @unique
+  status             String      @default("OPEN")
+  type               String
+  total              Float
+  notes              String?
+  tableNumber        String?
+  promisedTime       Int?
+  paymentMethod      String?
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+  customerId         String
+  assignedEmployeeId String?
+  completedById      String?
+  delivery           Delivery?
+  items              OrderItem[]
+  assignedEmployee   Employee?   @relation("AssignedOrders", fields: [assignedEmployeeId], references: [id])
+  completedBy        Employee?   @relation("CompletedOrders", fields: [completedById], references: [id])
+  customer           Customer    @relation(fields: [customerId], references: [id])
+
+  @@index([status])
+  @@index([createdAt])
+  @@index([customerId])
+  @@index([assignedEmployeeId])
+  @@index([completedById])
+  @@index([type])
+  @@index([status, type])
+  @@index([status, createdAt])
+  @@index([status, type, createdAt]) // Dodano dla lepszej wydajności mapy
+  @@index([assignedEmployeeId, status]) // Dodano dla filtrowania kierowców
+  @@map("orders")
+}
+
+model OrderItem {
+  id       String @id @default(cuid())
+  name     String
+  quantity Int
+  price    Float
+  total    Float
+  orderId  String
+  order    Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  
+  // Dodatki i składniki
+  addons             Json?
+  ingredients        Json?
+  addedIngredients   Json?
+  removedIngredients Json?
+  isHalfHalf         Boolean @default(false)
+  selectedSize       Json?
+  leftHalf           Json?
+  rightHalf          Json?
+  notes              String?
+
+  @@index([orderId])
+  @@map("order_items")
+}
+
+model Delivery {
+  id            String    @id @default(cuid())
+  addressId     String
+  estimatedTime DateTime?
+  orderId       String    @unique
+  address       Address   @relation(fields: [addressId], references: [id])
+  order         Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([addressId])
+  @@map("deliveries")
+}
+
+model Employee {
+  id             String   @id @default(cuid())
+  name           String
+  email          String   @unique
+  phone          String?
+  role           String
+  loginCode      String?  @unique
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  assignedOrders Order[]  @relation("AssignedOrders")
+  completedOrders Order[] @relation("CompletedOrders")
+  locations      DriverLocation[]
+
+  @@index([role])
+  @@index([isActive])
+  @@index([loginCode])
+  @@map("employees")
+}
+
+model DeliveryZone {
+  id               String   @id @default(cuid())
+  name             String
+  coordinates      String
+  isActive         Boolean  @default(true)
+  deliveryPrice    Float
+  minOrderValue    Float
+  freeDeliveryFrom Float?
+  courierRate      Float?
+  area             Float
+  color            String   @default("#3b82f6")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@map("delivery_zones")
+}
+
+model Category {
+  id               String            @id @default(cuid())
+  name             String
+  vatRate          Float
+  isDefault        Boolean           @default(false)
+  isOnline         Boolean           @default(true)
+  imageUrl         String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  dishes           Dish[]
+  groupAssignments GroupAssignment[]
+  sizes            Size[]
+
+  @@index([name])
+  @@map("categories")
+}
+
+model Size {
+  id                  String     @id @default(cuid())
+  categoryId          String
+  name                String
+  isDefaultInCategory Boolean    @default(false)
+  isOnline            Boolean    @default(true)
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+  dishSizes           DishSize[]
+  category            Category   @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([categoryId, name])
+  @@map("sizes")
+}
+
+model Dish {
+  id               String            @id @default(cuid())
+  categoryId       String
+  name             String
+  imageUrl         String?
+  isOnline         Boolean           @default(true)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  dishSizes        DishSize[]
+  category         Category          @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  groupAssignments GroupAssignment[]
+  ingredients      Ingredient[]
+
+  @@index([categoryId, name])
+  @@map("dishes")
+}
+
+model DishSize {
+  id          String   @id @default(cuid())
+  dishId      String
+  sizeId      String
+  price       Float
+  vatSource   String   @default("INHERIT")
+  vatOverride Float?
+  isOnline    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  dish        Dish     @relation(fields: [dishId], references: [id], onDelete: Cascade)
+  size        Size     @relation(fields: [sizeId], references: [id])
+
+  @@unique([dishId, sizeId])
+  @@map("dish_sizes")
+}
+
+model Ingredient {
+  id        String   @id @default(cuid())
+  dishId    String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  dish      Dish     @relation(fields: [dishId], references: [id], onDelete: Cascade)
+
+  @@map("ingredients")
+}
+
+model AddonGroup {
+  id               String            @id @default(cuid())
+  name             String
+  isOnline         Boolean           @default(true)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  addonItems       AddonItem[]
+  groupAssignments GroupAssignment[]
+  modifiers        Modifier?
+
+  @@index([name])
+  @@map("addon_groups")
+}
+
+model AddonItem {
+  id        String     @id @default(cuid())
+  groupId   String
+  name      String
+  price     Float      @default(0)
+  isOnline  Boolean    @default(true)
+  sortOrder Int        @default(0)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  group     AddonGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@index([groupId, sortOrder])
+  @@map("addon_items")
+}
+
+model CompanySettings {
+  id        String   @id @default(cuid())
+  name      String
+  address   String
+  latitude  Float?
+  longitude Float?
+  phone     String?
+  email     String?
+  website   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("company_settings")
+}
+
+model Modifier {
+  id              String     @id @default(cuid())
+  groupId         String     @unique
+  selectionType   String     @default("MULTI")
+  minSelect       Int        @default(0)
+  maxSelect       Int?
+  includedFreeQty Int        @default(0)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  group           AddonGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@map("modifiers")
+}
+
+model GroupAssignment {
+  id         String     @id @default(cuid())
+  groupId    String
+  categoryId String?
+  dishId     String?
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  category   Category?  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  dish       Dish?      @relation(fields: [dishId], references: [id], onDelete: Cascade)
+  group      AddonGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@map("group_assignments")
+}
+
+model DriverLocation {
+  id        String   @id @default(cuid())
+  driverId  String   @unique
+  latitude  Float
+  longitude Float
+  orderId   String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  driver    Employee @relation(fields: [driverId], references: [id], onDelete: Cascade)
+
+  @@map("driver_locations")
+}

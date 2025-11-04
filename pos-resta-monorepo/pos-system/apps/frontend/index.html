@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>POS System</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      #root {
+        min-height: 100vh;
+      }
+    </style>
+  </head>
+  <body>
+    <noscript>
+      <div style="background: red; color: white; padding: 20px; text-align: center; font-size: 24px;">
+        ❌ JAVASCRIPT JEST WYŁĄCZONY!
+      </div>
+    </noscript>
+    <div id="root"></div>
+    <script>
+      // Diagnostyka JavaScript
+      console.log('✅ JavaScript jest włączony!');
+      console.log('✅ Vite/React będzie ładowany...');
+      
+      // Sprawdź czy root istnieje
+      if (document.getElementById('root')) {
+        console.log('✅ Element #root istnieje');
+      } else {
+        console.error('❌ Element #root NIE istnieje!');
+      }
+      
+      // Monitorowanie błędów
+      window.addEventListener('error', function(e) {
+        console.error('❌ Błąd podczas ładowania:', e.message, e.filename, e.lineno);
+      }, true);
+      
+      // Diagnostyka DOM po załadowaniu
+      setTimeout(function() {
+        const root = document.getElementById('root');
+        if (root) {
+          console.log('=== DIAGNOSTYKA DOM ===');
+          console.log('Root children count:', root.children.length);
+          console.log('Root innerHTML length:', root.innerHTML.length);
+          console.log('Root innerHTML:', root.innerHTML.substring(0, 300));
+          
+          // Sprawdź style
+          const computedStyle = window.getComputedStyle(root);
+          console.log('Root display:', computedStyle.display);
+          console.log('Root visibility:', computedStyle.visibility);
+          console.log('Root opacity:', computedStyle.opacity);
+          
+          if (root.children.length === 0 && root.innerHTML.length < 100) {
+            console.error('❌❌❌ ROOT JEST PUSTY - APLIKACJA NIE RENDERUJE SIĘ! ❌❌❌');
+            
+            // DODAJ FALLBACK
+            root.innerHTML = `
+              <div style="padding: 40px; text-align: center; font-family: Arial, sans-serif;">
+                <h1 style="color: #333; margin-bottom: 20px;">⚠️ Problem z renderowaniem</h1>
+                <p style="color: #666; margin-bottom: 30px;">Aplikacja się załadowała, ale nie renderuje się poprawnie.</p>
+                <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; text-align: left; max-width: 600px; margin: 0 auto;">
+                  <p><strong>Diagnostyka:</strong></p>
+                  <ul style="text-align: left;">
+                    <li>JavaScript: ✅ Działa</li>
+                    <li>Vite: ❓ Sprawdź konsolę</li>
+                    <li>React: ❌ Nie renderuje</li>
+                  </ul>
+                  <p style="margin-top: 20px; color: #d32f2f;">
+                    <strong>Sprawdź konsolę przeglądarki (F12) dla szczegółów.</strong>
+                  </p>
+                </div>
+              </div>
+            `;
+          } else {
+            console.log('✅ Root zawiera zawartość - aplikacja renderuje się');
+            
+            if (computedStyle.display === 'none') {
+              console.error('❌ Root ma display: none - naprawiam');
+              root.style.display = 'block';
+            }
+            if (computedStyle.visibility === 'hidden') {
+              console.error('❌ Root ma visibility: hidden - naprawiam');
+              root.style.visibility = 'visible';
+            }
+            if (parseFloat(computedStyle.opacity) === 0) {
+              console.error('❌ Root ma opacity: 0 - naprawiam');
+              root.style.opacity = '1';
+            }
+          }
+        }
+      }, 5000);
+    </script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,534 @@
+openapi: 3.0.3
+info:
+  title: POS System API
+  description: API for POS System with orders management and geolocation
+  version: 1.0.0
+  contact:
+    name: POS System Team
+servers:
+  - url: http://localhost:3001
+    description: Development server
+  - url: https://api.pos-system.com
+    description: Production server
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      description: Check if the API is running
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "OK"
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /api/orders:
+    get:
+      summary: Get orders list
+      description: Retrieve a list of orders with optional filtering
+      parameters:
+        - name: status
+          in: query
+          description: Filter by order status
+          schema:
+            $ref: '#/components/schemas/OrderStatus'
+        - name: type
+          in: query
+          description: Filter by order type
+          schema:
+            $ref: '#/components/schemas/OrderType'
+        - name: search
+          in: query
+          description: Search in order number, customer name, or phone
+          schema:
+            type: string
+        - name: dateFrom
+          in: query
+          description: Filter orders from this date
+          schema:
+            type: string
+            format: date-time
+        - name: dateTo
+          in: query
+          description: Filter orders to this date
+          schema:
+            type: string
+            format: date-time
+        - name: page
+          in: query
+          description: Page number for pagination
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          description: Number of orders per page
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: Orders list retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrdersListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    post:
+      summary: Create new order
+      description: Create a new order with customer and items
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrderRequest'
+      responses:
+        '201':
+          description: Order created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateOrderResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/orders/{id}:
+    get:
+      summary: Get order by ID
+      description: Retrieve a specific order by its ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Order ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Order retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    delete:
+      summary: Delete order
+      description: Delete an order (only OPEN orders can be deleted)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Order ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Order deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteOrderResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/orders/{id}/status:
+    patch:
+      summary: Update order status
+      description: Update the status of an existing order
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Order ID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateOrderStatusRequest'
+      responses:
+        '200':
+          description: Order status updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateOrderStatusResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/orders/geo:
+    get:
+      summary: Get orders with geolocation
+      description: Retrieve orders that have delivery addresses with coordinates
+      responses:
+        '200':
+          description: Orders with geolocation retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrdersGeoResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  schemas:
+    OrderStatus:
+      type: string
+      enum: [OPEN, IN_PROGRESS, READY, COMPLETED, CANCELLED]
+      description: Status of the order
+
+    OrderType:
+      type: string
+      enum: [DELIVERY, TAKEAWAY, DINE_IN]
+      description: Type of the order
+
+    Address:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Address ID
+        street:
+          type: string
+          description: Street address
+        city:
+          type: string
+          description: City name
+        postalCode:
+          type: string
+          description: Postal code
+        latitude:
+          type: number
+          format: double
+          description: Latitude coordinate
+        longitude:
+          type: number
+          format: double
+          description: Longitude coordinate
+      required:
+        - street
+        - city
+        - postalCode
+
+    Customer:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Customer ID
+        name:
+          type: string
+          description: Customer full name
+        phone:
+          type: string
+          description: Customer phone number
+        email:
+          type: string
+          format: email
+          description: Customer email address
+        address:
+          $ref: '#/components/schemas/Address'
+      required:
+        - name
+        - phone
+
+    OrderItem:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Order item ID
+        name:
+          type: string
+          description: Product name
+        quantity:
+          type: integer
+          minimum: 1
+          description: Quantity ordered
+        price:
+          type: integer
+          minimum: 0
+          description: Price per unit in grosz (cents)
+        total:
+          type: integer
+          minimum: 0
+          description: Total price for this item in grosz (cents)
+      required:
+        - name
+        - quantity
+        - price
+
+    Order:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Order ID
+        orderNumber:
+          type: string
+          description: Human-readable order number
+        status:
+          $ref: '#/components/schemas/OrderStatus'
+        type:
+          $ref: '#/components/schemas/OrderType'
+        total:
+          type: integer
+          minimum: 0
+          description: Total order value in grosz (cents)
+        customer:
+          $ref: '#/components/schemas/Customer'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+        delivery:
+          type: object
+          properties:
+            address:
+              $ref: '#/components/schemas/Address'
+            estimatedTime:
+              type: string
+              format: date-time
+              description: Estimated delivery time
+        notes:
+          type: string
+          description: Additional notes for the order
+        createdAt:
+          type: string
+          format: date-time
+          description: Order creation timestamp
+        updatedAt:
+          type: string
+          format: date-time
+          description: Order last update timestamp
+      required:
+        - orderNumber
+        - status
+        - type
+        - total
+        - customer
+        - items
+
+    CreateOrderRequest:
+      type: object
+      properties:
+        type:
+          $ref: '#/components/schemas/OrderType'
+        customer:
+          $ref: '#/components/schemas/Customer'
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              quantity:
+                type: integer
+                minimum: 1
+              price:
+                type: integer
+                minimum: 0
+            required:
+              - name
+              - quantity
+              - price
+        notes:
+          type: string
+      required:
+        - type
+        - customer
+        - items
+
+    UpdateOrderStatusRequest:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/OrderStatus'
+      required:
+        - status
+
+    OrdersListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            orders:
+              type: array
+              items:
+                $ref: '#/components/schemas/Order'
+            total:
+              type: integer
+              description: Total number of orders matching filters
+            page:
+              type: integer
+              description: Current page number
+            limit:
+              type: integer
+              description: Number of orders per page
+
+    OrderResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          $ref: '#/components/schemas/Order'
+
+    CreateOrderResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          $ref: '#/components/schemas/Order'
+        message:
+          type: string
+          example: "Zamówienie zostało utworzone pomyślnie"
+
+    UpdateOrderStatusResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          $ref: '#/components/schemas/Order'
+        message:
+          type: string
+          example: "Status zamówienia został zaktualizowany pomyślnie"
+
+    DeleteOrderResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Zamówienie zostało usunięte pomyślnie"
+
+    OrdersGeoResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Order'
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                example: false
+              error:
+                type: string
+                example: "Nieprawidłowe dane żądania"
+
+    ValidationError:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                example: false
+              error:
+                type: string
+                example: "Błąd walidacji danych"
+              errors:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    field:
+                      type: string
+                      example: "customer.name"
+                    message:
+                      type: string
+                      example: "Nazwa klienta jest wymagana"
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                example: false
+              error:
+                type: string
+                example: "Zamówienie nie zostało znalezione"
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                example: false
+              error:
+                type: string
+                example: "Wystąpił błąd wewnętrzny serwera"
+

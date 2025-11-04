@@ -1,0 +1,271 @@
+.ingredients-manager {
+  margin-top: 1.5rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 1rem;
+  background: #fafafa;
+}
+
+.ingredients-header h3 {
+  margin: 0 0 1rem 0;
+  color: #333;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.ingredient-input-section {
+  margin-bottom: 1rem;
+}
+
+.ingredient-input-container {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.ingredient-input {
+  flex: 1;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  transition: border-color 0.2s ease;
+}
+
+.ingredient-input:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.ingredient-actions {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.ingredient-clear-btn,
+.ingredient-save-btn {
+  width: 36px;
+  height: 36px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  transition: all 0.2s ease;
+}
+
+.ingredient-clear-btn:hover {
+  background: #f8f9fa;
+  border-color: #adb5bd;
+}
+
+.ingredient-save-btn {
+  background: #28a745;
+  border-color: #28a745;
+  color: white;
+}
+
+.ingredient-save-btn:hover:not(:disabled) {
+  background: #218838;
+  border-color: #1e7e34;
+}
+
+.ingredient-save-btn:disabled {
+  background: #6c757d;
+  border-color: #6c757d;
+  cursor: not-allowed;
+}
+
+.add-ingredient-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.add-ingredient-btn:hover:not(:disabled) {
+  background: #0056b3;
+}
+
+.add-ingredient-btn:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+}
+
+.add-icon {
+  font-size: 1rem;
+  font-weight: bold;
+}
+
+.ingredients-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.no-ingredients {
+  text-align: center;
+  padding: 2rem;
+  color: #6c757d;
+  font-style: italic;
+}
+
+.ingredient-item {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  margin-bottom: 0.5rem;
+  padding: 0.75rem;
+  transition: box-shadow 0.2s ease;
+}
+
+.ingredient-item:hover {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.ingredient-display {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.ingredient-name {
+  font-size: 0.9rem;
+  color: #333;
+  font-weight: 500;
+}
+
+.ingredient-item-actions {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.ingredient-edit-btn,
+.ingredient-remove-btn {
+  width: 28px;
+  height: 28px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  transition: all 0.2s ease;
+}
+
+.ingredient-edit-btn:hover {
+  background: #e9ecef;
+  border-color: #adb5bd;
+}
+
+.ingredient-remove-btn:hover:not(:disabled) {
+  background: #f8d7da;
+  border-color: #f5c6cb;
+  color: #721c24;
+}
+
+.ingredient-remove-btn:disabled {
+  background: #f8f9fa;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.ingredient-edit-container {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.ingredient-edit-input {
+  flex: 1;
+  padding: 0.5rem;
+  border: 1px solid #007bff;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.ingredient-edit-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.ingredient-edit-actions {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.ingredient-save-edit-btn,
+.ingredient-cancel-edit-btn {
+  width: 28px;
+  height: 28px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  transition: all 0.2s ease;
+}
+
+.ingredient-save-edit-btn {
+  background: #28a745;
+  border-color: #28a745;
+  color: white;
+}
+
+.ingredient-save-edit-btn:hover:not(:disabled) {
+  background: #218838;
+  border-color: #1e7e34;
+}
+
+.ingredient-save-edit-btn:disabled {
+  background: #6c757d;
+  border-color: #6c757d;
+  cursor: not-allowed;
+}
+
+.ingredient-cancel-edit-btn:hover {
+  background: #f8d7da;
+  border-color: #f5c6cb;
+  color: #721c24;
+}
+
+/* Scrollbar styling */
+.ingredients-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.ingredients-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.ingredients-list::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.ingredients-list::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+
+
+
+
+

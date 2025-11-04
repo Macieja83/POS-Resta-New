@@ -1,0 +1,40 @@
+{
+  "expo": {
+    "name": "EmpApp",
+    "slug": "empapp",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./favicon.ico",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./favicon.ico",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Aplikacja potrzebuje dostępu do Twojej lokalizacji, aby śledzić pozycję kierowcy podczas dostaw.",
+        "NSLocationAlwaysUsageDescription": "Aplikacja potrzebuje dostępu do Twojej lokalizacji, aby śledzić pozycję kierowcy podczas dostaw."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./favicon.ico",
+        "backgroundColor": "#ffffff"
+      },
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ]
+    },
+    "web": {
+      "favicon": "./favicon.ico",
+      "bundler": "metro"
+    },
+    "scheme": "empapp"
+  }
+}
