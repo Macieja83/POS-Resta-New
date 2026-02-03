@@ -3,6 +3,7 @@ import { createOrderSchema, ordersFiltersSchema, updateOrderSchema, updateOrderS
 import { OrdersService } from '../services/orders.service';
 import {
     OrderSummaryFilters,
+    OrdersFiltersInput,
     OrderType
 } from '../types/local';
 
@@ -27,7 +28,7 @@ export class OrdersController {
         ...filters,
         page: filters.page || 1,
         limit: filters.limit || 15 // Further reduced limit for faster loading
-      });
+      } as OrdersFiltersInput);
       
       // Add cache headers for better performance
       res.set({

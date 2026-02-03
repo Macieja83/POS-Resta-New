@@ -151,6 +151,23 @@ export class EmployeesRepository {
     return location;
   }
 
+  async deactivateDriverLocation(driverId: string) {
+    const existing = await this.prisma.driverLocation.findUnique({
+      where: { driverId },
+      include: {
+        driver: { select: { id: true, name: true, email: true, role: true, isActive: true } }
+      }
+    });
+    if (!existing) return null;
+    return this.prisma.driverLocation.update({
+      where: { driverId },
+      data: { isActive: false },
+      include: {
+        driver: { select: { id: true, name: true, email: true, role: true, isActive: true } }
+      }
+    });
+  }
+
   async getActiveDriverLocations() {
     try {
       const staleThreshold = new Date(Date.now() - 5 * 60 * 1000);
