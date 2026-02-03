@@ -1,12 +1,11 @@
-// Base URL for API: must point to backend in production. Computed at request time so it runs in the browser (window) and is correct on Vercel.
+// Production backend URL (Vercel). In production build we always use this so requests don't hit frontend origin (404).
 const PRODUCTION_API_BASE = 'https://pos-system-backend.vercel.app/api';
 
 function getApiBaseUrl(): string {
   const fromEnv = (import.meta.env.VITE_API_URL as string)?.trim()?.replace(/\/$/, '');
   if (fromEnv) return fromEnv;
-  if (typeof window !== 'undefined' && window.location?.hostname?.includes('vercel.app')) {
-    return PRODUCTION_API_BASE;
-  }
+  // PROD is true when built with vite build (e.g. on Vercel). Use full backend URL so we never get 404 on /api/*.
+  if (import.meta.env.PROD) return PRODUCTION_API_BASE;
   return '/api';
 }
 
