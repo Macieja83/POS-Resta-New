@@ -27,7 +27,8 @@
     "db:generate": "npm run db:generate --workspace=apps/backend",
     "db:studio": "npm run db:studio --workspace=apps/backend",
     "clean": "rimraf node_modules apps/*/node_modules packages/*/node_modules && npm install",
-    "vercel:build": "npm run build:frontend && npm run build:backend"
+    "vercel:build": "npm run build:frontend && npm run build:backend",
+    "vercel:backend": "pnpm --filter @pos-system/backend run db:generate && pnpm --filter @pos-system/backend run build"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",
@@ -48,5 +49,8 @@
     "@prisma/client": "^6.16.2",
     "postgres": "^3.4.7",
     "prisma": "^6.16.2"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["@prisma/client", "prisma", "@prisma/engines"]
   }
 }
