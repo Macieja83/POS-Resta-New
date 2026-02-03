@@ -165,7 +165,12 @@ export class EmployeesController {
         console.warn('⚠️ Warning: Could not ensure all employees have loginCode:', ensureError);
       }
       
-        employee = await this.employeesService.getEmployeeByLoginCode(loginCode);
+        try {
+          employee = await this.employeesService.getEmployeeByLoginCode(loginCode);
+        } catch (loginError) {
+          const msg = loginError instanceof Error ? loginError.message : 'Nieprawidłowy kod logowania';
+          return res.status(401).json({ success: false, error: msg });
+        }
       }
       
       if (!employee) {

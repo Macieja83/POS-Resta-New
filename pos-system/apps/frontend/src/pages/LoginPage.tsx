@@ -57,7 +57,8 @@ export const LoginPage: React.FC = () => {
       }
     } catch (error) {
       console.error('Login error:', error);
-      setError('Nieprawidłowy kod logowania');
+      const msg = error instanceof Error ? error.message : 'Nieprawidłowy kod logowania';
+      setError(msg);
     } finally {
       setIsLoading(false);
     }

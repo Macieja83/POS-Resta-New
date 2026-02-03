@@ -31,6 +31,26 @@ Oba projekty są połączone: frontend w `vercel.json` przekierowuje `/api/*` na
 
 4. Sprawdź też: **https://pos-system-backend.vercel.app/api/employees** – lista pracowników = backend + baza działają.
 
+### 404 „Cannot POST /api/employees/login” (request na domenie frontendu)
+
+Jeśli w konsoli widzisz `POST https://pos-system-frontend-two.vercel.app/api/... 404`, request trafia na **frontend**, a nie na backend. W kodzie jest **fallback**: gdy strona działa na `*.vercel.app`, API jest wywoływane pod `https://pos-system-backend.vercel.app/api`. Wypchnij zmiany, zredeployuj frontend i spróbuj ponownie.
+
+### Dlaczego „Nieprawidłowy kod logowania” na Vercel?
+
+Logowanie kodem działa tylko wtedy, gdy:
+
+- **Backend ma połączenie z bazą** – w `/api/health` jest `"db": "connected"`.
+- **W bazie produkcyjnej są pracownicy z kodem** – tabela `Employee` musi mieć rekordy z wypełnionym `loginCode` (4 cyfry).
+
+**Co zrobić:**
+
+1. Upewnij się, że w Supabase (baza produkcyjna) są migracje i że tabela `Employee` istnieje.
+2. Dodaj przynajmniej jednego pracownika (np. przez panel POS lokalnie, łącząc się z tą samą bazą, albo przez seed / API).
+3. Jeśli pracownicy są, ale bez kodu: wywołaj raz **POST**  
+   `https://pos-system-backend.vercel.app/api/employees-fix/ensure-login-codes`  
+   – wygeneruje brakujące kody. Potem sprawdź **GET** `/api/employees` i zobacz pole `loginCode`.
+4. Na stronie logowania po zmianach w kodzie wyświetlany jest **konkretny błąd z API** (np. „Pracownik z kodem … nie został znaleziony” lub „Database connection error”) – to ułatwia diagnozę.
+
 ---
 
 ## 2. Konfiguracja projektu „pos system backend”
@@ -48,6 +68,7 @@ Projekt **pos-system-frontend** jest dodany i wdrożony (produkcja: **https://po
 
 - **Rewrite API:** w `apps/frontend/vercel.json` jest `destination`: `https://pos-system-backend.vercel.app/api/$1`
 - **CORS:** w backendzie (`apps/backend/src/app.ts`) są m.in. `pos-system-frontend.vercel.app` i `pos-system-frontend-two.vercel.app`
+- **Zmienna dla buildu (opcjonalna):** W projekcie frontendu w Vercel możesz ustawić **`VITE_API_URL`** = `https://pos-system-backend.vercel.app/api`. W kodzie jest **fallback**: gdy aplikacja działa na domenie `*.vercel.app`, a zmienna nie jest ustawiona, requesty API i tak trafiają na backend (`pos-system-backend.vercel.app`). Dzięki temu logowanie działa nawet bez tej zmiennej (projekt frontendu używa bowiem `vercel.json` z roota monorepo, więc rewrite `/api` na backend nie obowiązuje i relative `/api` dawałoby 404).
 
 ### Kolejne deploye frontendu (z Git lub CLI)
 
