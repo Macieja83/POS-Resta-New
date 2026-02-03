@@ -12,21 +12,12 @@ interface OrderStatusChangeModalProps {
   onOrderUpdated?: (updatedOrder: Order) => void;
 }
 
-const COMPLETION_STATUSES = [
-  { 
-    value: 'CANCELLED', 
-    label: 'Anulowane', 
-    color: '#ef4444', 
-    icon: '🚫',
-    borderColor: '#ef4444'
-  },
-  { 
-    value: 'COMPLETED', 
-    label: 'Odebrane', 
-    color: '#10b981', 
-    icon: '✅',
-    borderColor: '#10b981'
-  }
+const ORDER_STATUSES = [
+  { value: 'OPEN', label: 'Otwarte', color: '#3b82f6', icon: '📋', borderColor: '#3b82f6' },
+  { value: 'IN_PROGRESS', label: 'W realizacji', color: '#f59e0b', icon: '⏳', borderColor: '#f59e0b' },
+  { value: 'READY', label: 'Gotowe', color: '#10b981', icon: '✅', borderColor: '#10b981' },
+  { value: 'COMPLETED', label: 'Odebrane / Zapłacone', color: '#059669', icon: '🏁', borderColor: '#059669' },
+  { value: 'CANCELLED', label: 'Anulowane', color: '#ef4444', icon: '🚫', borderColor: '#ef4444' }
 ];
 
 const PAYMENT_METHODS = [
@@ -41,12 +32,14 @@ export const OrderStatusChangeModal: React.FC<OrderStatusChangeModalProps> = ({
   onClose,
   onOrderUpdated
 }) => {
-  const [selectedCompletionStatus, setSelectedCompletionStatus] = useState<string>('');
+  const [selectedStatus, setSelectedStatus] = useState<string>('');
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('');
   const queryClient = useQueryClient();
   const { employee } = useAuth();
 
-  // Update order status mutation
+  const isCompletionStatus = selectedStatus === 'COMPLETED' || selectedStatus === 'CANCELLED';
+
+  // Update order status mutation – optimistic update + cache update without refetch
   const updateStatusMutation = useMutation({
     mutationFn: ({ orderId, status, paymentMethod, completedBy }: { 
       orderId: string; 
@@ -56,29 +49,65 @@ export const OrderStatusChangeModal: React.FC<OrderStatusChangeModalProps> = ({
     }) =>
       ordersApi.updateOrderStatus(orderId, {
         status,
-        paymentMethod,
-        completedBy
+        ...(paymentMethod && { paymentMethod }),
+        ...(completedBy && { completedBy })
       }),
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['orders'] });
-      queryClient.invalidateQueries({ queryKey: ['orders-geo'] });
-      queryClient.invalidateQueries({ queryKey: ['order-summary'] });
-      
-      // Dispatch custom event for OrderSummaryPage
-      if (data.data) {
-        window.dispatchEvent(new CustomEvent('orderStatusChanged', { 
-          detail: { orderId: data.data.id, status: data.data.status } 
-        }));
-        
-        if (onOrderUpdated) {
-          onOrderUpdated(data.data);
-        }
+    onMutate: async (variables) => {
+      await queryClient.cancelQueries({ queryKey: ['orders'] });
+      const previous = queryClient.getQueriesData({ queryKey: ['orders'] });
+      const optimisticOrder = order
+        ? { ...order, status: variables.status, paymentMethod: variables.paymentMethod ?? order.paymentMethod }
+        : null;
+      if (optimisticOrder) {
+        queryClient.setQueriesData(
+          { queryKey: ['orders'] },
+          (old: any) => {
+            if (!old?.data?.orders) return old;
+            return {
+              ...old,
+              data: {
+                ...old.data,
+                orders: old.data.orders.map((o: Order) =>
+                  o.id === variables.orderId ? optimisticOrder : o
+                )
+              }
+            };
+          }
+        );
       }
-      alert('Status zamówienia został zaktualizowany');
-      onClose();
+      return { previous };
     },
-    onError: (error) => {
+    onSuccess: (data) => {
+      const updated = data.data;
+      if (updated) {
+        queryClient.setQueriesData(
+          { queryKey: ['orders'] },
+          (old: any) => {
+            if (!old?.data?.orders) return old;
+            return {
+              ...old,
+              data: {
+                ...old.data,
+                orders: old.data.orders.map((o: Order) => (o.id === updated.id ? updated : o))
+              }
+            };
+          }
+        );
+        window.dispatchEvent(new CustomEvent('orderStatusChanged', { 
+          detail: { orderId: updated.id, status: updated.status } 
+        }));
+        if (onOrderUpdated) onOrderUpdated(updated);
+      }
+      queryClient.invalidateQueries({ queryKey: ['orders-geo'], refetchType: 'none' });
+      queryClient.invalidateQueries({ queryKey: ['order-summary'], refetchType: 'none' });
+    },
+    onError: (error, _variables, context) => {
       console.error('Update status error:', error);
+      if (context?.previous) {
+        context.previous.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
+      }
       alert('Błąd podczas aktualizacji statusu');
     }
   });
@@ -86,44 +115,36 @@ export const OrderStatusChangeModal: React.FC<OrderStatusChangeModalProps> = ({
   // Initialize form when order changes
   React.useEffect(() => {
     if (order) {
-      // Set default completion status based on current order status
-      if (order.status === 'CANCELLED') {
-        setSelectedCompletionStatus('CANCELLED');
-      } else if (order.status === 'COMPLETED') {
-        setSelectedCompletionStatus('COMPLETED');
-      } else {
-        // For other statuses, default to COMPLETED
-        setSelectedCompletionStatus('COMPLETED');
-      }
-      setSelectedPaymentMethod('CASH'); // Default payment method
+      setSelectedStatus(order.status || 'OPEN');
+      setSelectedPaymentMethod('CASH');
     }
   }, [order]);
 
   const handleConfirm = () => {
-    if (!order || !selectedCompletionStatus) return;
+    if (!order || !selectedStatus) return;
 
-    // Use logged in employee data
-    if (!employee) {
+    if (isCompletionStatus && !employee) {
       alert('Błąd: Brak danych zalogowanego pracownika');
       return;
     }
 
-    const employeeData = {
+    const employeeData = employee ? {
       id: employee.id,
       name: employee.name,
       role: employee.role
-    };
+    } : undefined;
 
+    onClose();
     updateStatusMutation.mutate({
       orderId: order.id,
-      status: selectedCompletionStatus,
-      paymentMethod: selectedPaymentMethod || undefined, // Convert empty string to undefined
-      completedBy: employeeData
+      status: selectedStatus,
+      paymentMethod: isCompletionStatus ? (selectedPaymentMethod || undefined) : undefined,
+      completedBy: isCompletionStatus ? employeeData : undefined
     });
   };
 
   const handleCancel = () => {
-    setSelectedCompletionStatus('');
+    setSelectedStatus('');
     setSelectedPaymentMethod('');
     onClose();
   };
@@ -139,20 +160,19 @@ export const OrderStatusChangeModal: React.FC<OrderStatusChangeModalProps> = ({
         </div>
 
         <div className="modal-body">
-          {/* Order Completion Status Section */}
           <div className="completion-section">
-            <h3>Zakończ zamówienie</h3>
+            <h3>Status zamówienia</h3>
             <div className="completion-buttons">
-              {COMPLETION_STATUSES.map((status) => (
+              {ORDER_STATUSES.map((status) => (
                 <button
                   key={status.value}
-                  className={`completion-btn ${selectedCompletionStatus === status.value ? 'selected' : ''}`}
+                  className={`completion-btn ${selectedStatus === status.value ? 'selected' : ''}`}
                   style={{ 
-                    backgroundColor: selectedCompletionStatus === status.value ? status.color : 'white',
-                    color: selectedCompletionStatus === status.value ? 'white' : '#374151',
+                    backgroundColor: selectedStatus === status.value ? status.color : 'white',
+                    color: selectedStatus === status.value ? 'white' : '#374151',
                     borderColor: status.borderColor
                   }}
-                  onClick={() => setSelectedCompletionStatus(status.value)}
+                  onClick={() => setSelectedStatus(status.value)}
                 >
                   <span className="completion-icon">{status.icon}</span>
                   <span className="completion-label">{status.label}</span>
@@ -161,29 +181,30 @@ export const OrderStatusChangeModal: React.FC<OrderStatusChangeModalProps> = ({
             </div>
           </div>
 
-          {/* Payment Method Selection Section */}
-          <div className="payment-section">
-            <h3>Wybierz formę płatności</h3>
-            <div className="payment-method-label">Forma płatności</div>
-            <div className="payment-buttons">
-              {PAYMENT_METHODS.map((method) => (
-                <button
-                  key={method.value}
-                  className={`payment-btn ${selectedPaymentMethod === method.value ? 'selected' : ''}`}
-                  onClick={() => setSelectedPaymentMethod(method.value)}
-                >
-                  <span className="payment-label">{method.label}</span>
-                </button>
-              ))}
+          {isCompletionStatus && (
+            <div className="payment-section">
+              <h3>Forma płatności</h3>
+              <div className="payment-method-label">Forma płatności</div>
+              <div className="payment-buttons">
+                {PAYMENT_METHODS.map((method) => (
+                  <button
+                    key={method.value}
+                    className={`payment-btn ${selectedPaymentMethod === method.value ? 'selected' : ''}`}
+                    onClick={() => setSelectedPaymentMethod(method.value)}
+                  >
+                    <span className="payment-label">{method.label}</span>
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         <div className="modal-footer">
           <button 
             className="confirm-btn"
             onClick={handleConfirm}
-            disabled={!selectedCompletionStatus || updateStatusMutation.isPending}
+            disabled={!selectedStatus || updateStatusMutation.isPending}
           >
             {updateStatusMutation.isPending ? 'Aktualizowanie...' : 'Potwierdź'}
           </button>

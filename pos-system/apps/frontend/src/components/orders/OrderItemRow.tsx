@@ -10,6 +10,7 @@ interface OrderItemRowProps {
   onOrderUpdated?: (updatedOrder: Order) => void;
   onCancel?: (order: Order) => void;
   onRestore?: (order: Order) => void;
+  onChangeStatus?: (order: Order) => void;
 }
 
 const getStatusColor = (status: string): string => {
@@ -125,6 +126,7 @@ const OrderItemRowComponent: React.FC<OrderItemRowProps> = ({
   onOrderUpdated,
   onCancel,
   onRestore,
+  onChangeStatus,
 }) => {
   // Validate order data
   if (!order) {
@@ -472,6 +474,22 @@ const OrderItemRowComponent: React.FC<OrderItemRowProps> = ({
             {getTypeText(order.type, order.tableNumber)}
           </span>
           <span
+            role="button"
+            tabIndex={0}
+            title={onChangeStatus && order.status !== 'COMPLETED' && order.status !== 'CANCELLED' ? 'Kliknij, aby zmienić status' : undefined}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (onChangeStatus && order.status !== 'COMPLETED' && order.status !== 'CANCELLED') {
+                onChangeStatus(order);
+              }
+            }}
+            onKeyDown={(e) => {
+              if ((e.key === 'Enter' || e.key === ' ') && onChangeStatus && order.status !== 'COMPLETED' && order.status !== 'CANCELLED') {
+                e.preventDefault();
+                e.stopPropagation();
+                onChangeStatus(order);
+              }
+            }}
             style={{
               padding: '0.25rem 0.5rem',
               borderRadius: '6px',
@@ -481,7 +499,17 @@ const OrderItemRowComponent: React.FC<OrderItemRowProps> = ({
               color: '#ffffff',
               boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
               letterSpacing: '0.025em',
-              textTransform: 'uppercase'
+              textTransform: 'uppercase',
+              cursor: onChangeStatus && order.status !== 'COMPLETED' && order.status !== 'CANCELLED' ? 'pointer' : 'default',
+              transition: 'opacity 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              if (onChangeStatus && order.status !== 'COMPLETED' && order.status !== 'CANCELLED') {
+                e.currentTarget.style.opacity = '0.9';
+              }
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.opacity = '1';
             }}
           >
             {getStatusText(order.status)}

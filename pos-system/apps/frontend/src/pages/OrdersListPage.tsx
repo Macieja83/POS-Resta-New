@@ -713,6 +713,7 @@ const OrdersListPageComponent: React.FC<OrdersListPageProps> = ({
                   onOrderUpdated={handleOrderUpdated}
                   onCancel={handleCancelOrder}
                   onRestore={handleRestoreOrder}
+                  onChangeStatus={handleChangeStatusFromDetail}
                 />
               ))}
             </div>
