@@ -1,62 +1,26 @@
-const express = require('express');
-const cors = require('cors');
+// Vercel serverless handler: createApp() is async (initializes DB), so we must
+// export a function(req, res) that resolves the app once and forwards requests.
+const { createApp } = require('../apps/backend/dist/app');
 
-// Create a simple Express app for Vercel
-const app = express();
+let appPromise = null;
 
-// Middleware
-app.use(cors());
-app.use(express.json());
+function getApp() {
+  if (!appPromise) {
+    appPromise = createApp();
+  }
+  return appPromise;
+}
 
-// Debug logging for Vercel
-app.use((req, res, next) => {
-  console.log(`🔍 ${req.method} ${req.path}`);
-  next();
-});
-
-// Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'production',
-    message: 'Vercel deployment working'
-  });
-});
-
-// Try to load the main app, but fallback to simple endpoints if it fails
-let mainApp = null;
-
-try {
-  const { createApp } = require('../apps/backend/dist/app');
-  mainApp = createApp();
-  console.log('✅ Main app loaded successfully');
-} catch (error) {
-  console.error('❌ Failed to load main app:', error.message);
-  
-  // Fallback endpoints
-  app.get('/api/orders', (req, res) => {
-    res.json({
-      success: false,
-      error: 'Backend not fully loaded. Check logs.',
-      message: error.message
-    });
-  });
-  
-  app.patch('/api/orders/:id/status', (req, res) => {
+module.exports = async function handler(req, res) {
+  try {
+    const app = await getApp();
+    app(req, res);
+  } catch (err) {
+    console.error('❌ Vercel handler error:', err);
     res.status(500).json({
-      success: false,
-      error: 'Backend not fully loaded. Check logs.',
-      message: error.message
+      status: 'error',
+      message: 'Backend failed to start. Check Vercel logs and DATABASE_URL.',
+      error: err.message || String(err)
     });
-  });
-}
-
-// If main app loaded successfully, use it
-if (mainApp) {
-  app.use('/', mainApp);
-}
-
-module.exports = app;
-
-
+  }
+};

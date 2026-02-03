@@ -1,5 +1,5 @@
-// Use relative paths - Vercel rewrites will handle the proxy
-const API_BASE_URL = '/api';
+// In production (Vercel), use env so requests can go to backend; otherwise use /api (dev proxy or rewrites)
+const API_BASE_URL = (import.meta.env.VITE_API_URL as string)?.replace(/\/$/, '') || '/api';
 
 export interface HealthResponse {
   status: string;

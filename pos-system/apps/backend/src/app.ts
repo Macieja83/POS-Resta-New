@@ -32,6 +32,7 @@ export async function createApp() {
     origin: process.env.NODE_ENV === 'production' 
       ? [
           'https://pos-system-frontend.vercel.app',
+          'https://pos-system-frontend-two.vercel.app',
           'https://pos-system-frontend-flax.vercel.app',
           'https://empapp-lfjl87tx3-macieja83s-projects.vercel.app',
           'https://empapp-75n5xj9wj-macieja83s-projects.vercel.app',
