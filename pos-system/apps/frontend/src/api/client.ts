@@ -1,14 +1,14 @@
-// In production, requests must go to backend. VITE_API_URL is set in Vercel env for frontend project.
-// Fallback: when running on Vercel frontend domain without env, use known backend URL (rewrites are not applied when frontend project uses monorepo root vercel.json).
+// Base URL for API: must point to backend in production. Computed at request time so it runs in the browser (window) and is correct on Vercel.
+const PRODUCTION_API_BASE = 'https://pos-system-backend.vercel.app/api';
+
 function getApiBaseUrl(): string {
   const fromEnv = (import.meta.env.VITE_API_URL as string)?.trim()?.replace(/\/$/, '');
   if (fromEnv) return fromEnv;
   if (typeof window !== 'undefined' && window.location?.hostname?.includes('vercel.app')) {
-    return 'https://pos-system-backend.vercel.app/api';
+    return PRODUCTION_API_BASE;
   }
   return '/api';
 }
-const API_BASE_URL = getApiBaseUrl();
 
 export interface HealthResponse {
   status: string;
@@ -35,7 +35,8 @@ export class ApiClient {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
-    const url = `${API_BASE_URL}${endpoint}`;
+    const baseUrl = getApiBaseUrl();
+    const url = `${baseUrl}${endpoint}`;
     
     // Get auth token
     const token = this.getAuthToken();
