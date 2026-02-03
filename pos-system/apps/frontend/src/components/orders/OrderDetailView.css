@@ -1,16 +1,16 @@
 .order-detail-overlay {
   position: fixed;
-  top: 5.44rem;
+  top: var(--modal-top, var(--nav-height, 6.5rem));
   left: 0;
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.6);
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
   z-index: 10000;
-  padding: 20px;
-  padding-top: 2rem;
+  padding: var(--modal-overlay-padding, 1.5rem);
+  overflow-y: auto;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
@@ -20,15 +20,16 @@
 
 .order-detail-container {
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  border-radius: var(--modal-border-radius, 12px);
+  box-shadow: var(--modal-shadow);
   width: 100%;
-  max-width: 95vw;
-  max-height: calc(100vh - 5.44rem - 2rem);
+  max-width: 90vw;
+  max-height: var(--modal-max-height);
   overflow: hidden;
   position: relative;
   display: flex;
   flex-direction: column;
+  margin: auto;
 }
 
 .order-detail-header {
@@ -602,12 +603,13 @@
 
 @media (max-width: 768px) {
   .order-detail-overlay {
-    padding: 8px;
+    padding: 0.75rem;
+    align-items: flex-start;
   }
-  
+
   .order-detail-container {
-    max-width: 100vw;
-    max-height: 98vh;
+    max-width: 100%;
+    max-height: min(98vh, var(--modal-max-height));
   }
   
   .order-detail-header {
@@ -664,7 +666,7 @@
 /* Payment Modal Styles */
 .payment-modal-overlay {
   position: fixed;
-  top: 5.44rem;
+  top: var(--nav-height, 6.5rem);
   left: 0;
   right: 0;
   bottom: 0;
@@ -682,7 +684,7 @@
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   width: 100%;
   max-width: 400px;
-  max-height: calc(100vh - 5.44rem - 4rem);
+  max-height: calc(100vh - var(--nav-height, 6.5rem) - 4rem);
   overflow: hidden;
   display: flex;
   flex-direction: column;

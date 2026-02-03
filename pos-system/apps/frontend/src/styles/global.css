@@ -4,6 +4,24 @@
   box-sizing: border-box;
 }
 
+:root {
+  /* Wysokość paska nawigacji – jedna wartość dla spójności treści (bez nakładania) */
+  --nav-height: 6.5rem;
+  /* Popupy zamówień – spójne rozmiary i odstępy */
+  --modal-top: var(--nav-height);
+  --modal-max-height: calc(100vh - var(--nav-height) - 2rem);
+  --modal-overlay-padding: 1.5rem;
+  --modal-border-radius: 12px;
+  --modal-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+@media (max-width: 640px) {
+  :root {
+    /* Na mobile nawigacja w 2 rzędy – większy offset, żeby treść się nie tnie */
+    --nav-height: 10rem;
+  }
+}
+
 html, body, #root {
   height: 100%;
   width: 100%;

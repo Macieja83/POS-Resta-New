@@ -1,10 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { settingsApi, CompanySettings, UpdateCompanySettingsRequest } from '../../api/settings';
+import { AddressAutocomplete } from '../orders/AddressAutocomplete';
 import './CompanySettingsForm.css';
 
 interface CompanySettingsFormProps {
   onLocationUpdate?: (latitude: number, longitude: number) => void;
+}
+
+function formatAddressLine(street: string, postalCode: string, city: string): string {
+  const parts = [street];
+  if (postalCode || city) {
+    parts.push([postalCode, city].filter(Boolean).join(' '));
+  }
+  return parts.filter(Boolean).join(', ');
 }
 
 export const CompanySettingsForm: React.FC<CompanySettingsFormProps> = ({ onLocationUpdate }) => {
@@ -18,8 +27,13 @@ export const CompanySettingsForm: React.FC<CompanySettingsFormProps> = ({ onLoca
     website: ''
   });
 
-  const [isGeocoding, setIsGeocoding] = useState(false);
-  const [geocodingError, setGeocodingError] = useState<string | null>(null);
+  const [addressData, setAddressData] = useState({
+    street: '',
+    city: 'Słupsk',
+    postalCode: '',
+    latitude: undefined as number | undefined,
+    longitude: undefined as number | undefined
+  });
 
   const queryClient = useQueryClient();
 
@@ -47,51 +61,30 @@ export const CompanySettingsForm: React.FC<CompanySettingsFormProps> = ({ onLoca
         email: settings.email || '',
         website: settings.website || ''
       });
+      setAddressData({
+        street: settings.address || '',
+        city: 'Słupsk',
+        postalCode: '',
+        latitude: settings.latitude,
+        longitude: settings.longitude
+      });
     }
   }, [settingsData]);
 
-  const geocodeAddress = async (address: string) => {
-    if (!address.trim()) return;
-
-    setIsGeocoding(true);
-    setGeocodingError(null);
-
-    try {
-      // Using OpenStreetMap Nominatim API for geocoding
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1&countrycodes=pl`
-      );
-      
-      if (!response.ok) {
-        throw new Error('Błąd podczas geokodowania adresu');
-      }
-
-      const data = await response.json();
-      
-      if (data && data.length > 0) {
-        const result = data[0];
-        const lat = parseFloat(result.lat);
-        const lon = parseFloat(result.lon);
-        
-        setFormData(prev => ({
-          ...prev,
-          latitude: lat.toString(),
-          longitude: lon.toString()
-        }));
-
-        // Notify parent component about location update
-        if (onLocationUpdate) {
-          onLocationUpdate(lat, lon);
-        }
-      } else {
-        setGeocodingError('Nie znaleziono adresu. Sprawdź poprawność adresu.');
-      }
-    } catch (error) {
-      console.error('Geocoding error:', error);
-      setGeocodingError('Błąd podczas geokodowania adresu. Spróbuj ponownie.');
-    } finally {
-      setIsGeocoding(false);
-    }
+  const handleAddressChange = (address: { street: string; city: string; postalCode: string; latitude?: number; longitude?: number }) => {
+    setAddressData({
+      street: address.street,
+      city: address.city,
+      postalCode: address.postalCode,
+      latitude: address.latitude,
+      longitude: address.longitude
+    });
+    setFormData(prev => ({
+      ...prev,
+      address: formatAddressLine(address.street, address.postalCode, address.city),
+      latitude: address.latitude?.toString() ?? prev.latitude,
+      longitude: address.longitude?.toString() ?? prev.longitude
+    }));
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -100,18 +93,6 @@ export const CompanySettingsForm: React.FC<CompanySettingsFormProps> = ({ onLoca
       ...prev,
       [name]: value
     }));
-  };
-
-  const handleAddressBlur = () => {
-    if (formData.address.trim() && (!formData.latitude || !formData.longitude)) {
-      geocodeAddress(formData.address);
-    }
-  };
-
-  const handleGeocodeClick = () => {
-    if (formData.address.trim()) {
-      geocodeAddress(formData.address);
-    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -169,31 +150,23 @@ export const CompanySettingsForm: React.FC<CompanySettingsFormProps> = ({ onLoca
         </div>
 
         <div className="form-group">
-          <label htmlFor="address">Adres firmy *</label>
-          <div className="address-input-group">
-            <input
-              type="text"
-              id="address"
-              name="address"
-              value={formData.address}
-              onChange={handleInputChange}
-              onBlur={handleAddressBlur}
-              required
-              placeholder="Wprowadź pełny adres firmy"
-            />
-            <button
-              type="button"
-              onClick={handleGeocodeClick}
-              disabled={isGeocoding || !formData.address.trim()}
-              className="geocode-btn"
-              title="Automatycznie znajdź współrzędne adresu"
-            >
-              {isGeocoding ? '🔄' : '📍'}
-            </button>
-          </div>
-          {geocodingError && (
-            <div className="geocoding-error">{geocodingError}</div>
-          )}
+          <label htmlFor="address">Adres lokalu *</label>
+          <AddressAutocomplete
+            value={addressData}
+            onChange={handleAddressChange}
+            onGeocodingComplete={(coordinates) => {
+              setFormData(prev => ({
+                ...prev,
+                latitude: coordinates.latitude.toString(),
+                longitude: coordinates.longitude.toString()
+              }));
+              if (onLocationUpdate) {
+                onLocationUpdate(coordinates.latitude, coordinates.longitude);
+              }
+            }}
+            placeholder="Wpisz adres z numerem budynku..."
+            disabled={false}
+          />
         </div>
 
         <div className="coordinates-group">

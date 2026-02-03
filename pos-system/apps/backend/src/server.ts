@@ -1,7 +1,11 @@
+import path from 'path';
 import { createApp } from './app';
 import dotenv from 'dotenv';
 
-// Load environment variables
+// Load .env from backend directory (works when started from monorepo root or from apps/backend)
+const backendDir = path.resolve(process.cwd(), 'apps', 'backend');
+const envPath = path.join(backendDir, '.env');
+dotenv.config({ path: envPath });
 dotenv.config();
 
 const PORT = parseInt(process.env.PORT || '4000', 10);

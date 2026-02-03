@@ -1,6 +1,6 @@
 .order-summary-page {
   padding: 20px;
-  padding-top: calc(20px + 5.44rem);
+  padding-top: calc(20px + var(--nav-height, 6.5rem));
   max-width: 1400px;
   margin: 0 auto;
   background-color: #f8f9fa;

@@ -118,19 +118,19 @@ export const MapView: React.FC<MapViewProps> = ({
   }, [onCancelOrder, onDeleteOrder, onEditOrder, onRestoreOrder, ordersWithGeo]);
 
   useEffect(() => {
-    if (!mapRef.current || mapInstanceRef.current || !companySettings?.data) return;
+    if (!mapRef.current || mapInstanceRef.current) return;
 
-    // Initialize map
+    // Initialize map – zawsze, nawet bez ustawień firmy (użyj domyślnych współrzędnych)
     const L = window.L;
     if (!L) {
       console.error('Leaflet not loaded');
       return;
     }
 
-    const settings = companySettings.data;
-    const lat = settings.latitude || 54.46;
-    const lng = settings.longitude || 17.02;
-    const address = settings.address || 'ul. Szczecinska 83, 76-200 Słupsk';
+    const settings = companySettings?.data ?? null;
+    const lat = settings?.latitude ?? 54.46;
+    const lng = settings?.longitude ?? 17.02;
+    const address = settings?.address ?? 'ul. Szczecinska 83, 76-200 Słupsk';
 
     // Center on restaurant location with wider zoom
     const map = L.map(mapRef.current).setView([lat, lng], 14);
@@ -173,7 +173,7 @@ export const MapView: React.FC<MapViewProps> = ({
         mapInstanceRef.current = null;
       }
     };
-  }, [companySettings]);
+  }, [companySettings?.data]);
 
   useEffect(() => {
     if (!mapInstanceRef.current) return;

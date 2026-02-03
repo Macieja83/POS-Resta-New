@@ -3,8 +3,8 @@
   box-sizing: border-box;
   margin: 0;
   padding: 1rem;
-  padding-top: calc(1rem + 5.44rem);
-  min-height: calc(100vh - 87.04px);
+  padding-top: calc(1rem + var(--nav-height, 6.5rem));
+  min-height: calc(100vh - var(--nav-height, 6.5rem));
   background: #fafafa;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
@@ -30,7 +30,7 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   height: fit-content;
   position: sticky;
-  top: calc(5.44rem + 1rem);
+  top: calc(var(--nav-height, 6.5rem) + 1rem);
 }
 
 /* Filters section */
@@ -848,7 +848,7 @@
 @media (max-width: 640px) {
   .orders-list-page {
     padding: 0.5rem;
-    padding-top: calc(0.5rem + 5.44rem);
+    padding-top: calc(0.5rem + var(--nav-height, 6.5rem));
   }
 
   .orders-grid {

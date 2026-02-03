@@ -391,11 +391,6 @@ const OrdersListPageComponent: React.FC<OrdersListPageProps> = ({
     return orders;
   }, [data?.data?.orders, effectiveType, appliedSearch, searchBy, sortBy, sortOrder]);
 
-  // Force refresh when showHistorical changes
-  React.useEffect(() => {
-    queryClient.invalidateQueries({ queryKey: ['orders'] });
-  }, [showHistorical]); // Remove queryClient from dependencies to prevent unnecessary invalidations
-
   // Listen for reset filters event from navigation
   React.useEffect(() => {
     const handleResetFilters = () => {

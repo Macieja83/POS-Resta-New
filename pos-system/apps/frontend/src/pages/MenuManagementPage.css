@@ -3,7 +3,7 @@
   min-height: 100vh;
   background: #f8f9fa;
   padding: 0;
-  margin-top: 5.44rem;
+  margin-top: var(--nav-height, 6.5rem);
 }
 
 /* Top Navigation Bar */
@@ -68,7 +68,7 @@
 /* Main Layout */
 .menu-management-layout {
   display: flex;
-  height: calc(100vh - 5.44rem - 120px);
+  height: calc(100vh - var(--nav-height, 6.5rem) - 120px);
 }
 
 /* Left Sidebar */

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { ordersApi } from '../../api/orders';
 import { UpdateOrderRequest, OrderType, OrderItem, PaymentMethod } from '../../types/shared';
@@ -185,46 +186,44 @@ export const OrderCreator: React.FC<OrderCreatorProps> = ({ isOpen, onClose, edi
       // setOrderItems([]);
     }
   }, [editOrder?.id, isOpen]); // Używaj tylko ID zamiast całego obiektu
-  
-  // Debug: Log orderItems changes
-  useEffect(() => {
-    console.log('📊 orderItems changed:', orderItems);
-  }, [orderItems]);
 
-  // Pobieranie kategorii menu
-  const { data: categoriesResponse } = useQuery({
+  const { data: categoriesResponse, isLoading: categoriesLoading } = useQuery({
     queryKey: ['menu-categories'],
-    queryFn: () => menuApi.getCategories()
+    queryFn: () => menuApi.getCategories(),
+    enabled: isOpen,
+    staleTime: 3 * 60 * 1000,
   });
   const categories = categoriesResponse?.success ? categoriesResponse.data : [];
 
-  // Pobieranie pozycji menu dla wybranej kategorii
-  const { data: menuItemsResponse } = useQuery({
+  const { data: menuItemsResponse, isLoading: menuItemsLoading } = useQuery({
     queryKey: ['menu-items', selectedCategory],
     queryFn: () => selectedCategory ? menuApi.getDishes(selectedCategory) : Promise.resolve({ success: true, data: [] }),
-    enabled: !!selectedCategory
+    enabled: isOpen && !!selectedCategory,
+    staleTime: 2 * 60 * 1000, // 2 min – przełączanie kategorii bez refetch
   });
   const menuItems = menuItemsResponse?.success ? menuItemsResponse.data : [];
 
-  // Pobieranie wszystkich pozycji menu dla funkcji pół na pół
   const { data: allMenuItemsResponse, isLoading: allMenuItemsLoading } = useQuery({
     queryKey: ['all-menu-items'],
-    queryFn: () => menuApi.getAllDishes()
+    queryFn: () => menuApi.getAllDishes(),
+    enabled: isOpen,
+    staleTime: 2 * 60 * 1000,
   });
   const allMenuItems = allMenuItemsResponse?.success ? allMenuItemsResponse.data : [];
 
-  // Pobieranie stref dostaw
   const { data: deliveryZonesResponse } = useQuery({
     queryKey: ['delivery-zones'],
     queryFn: () => deliveryZonesApi.getZones(),
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    enabled: isOpen,
+    staleTime: 5 * 60 * 1000,
   });
   const deliveryZones = deliveryZonesResponse?.success ? deliveryZonesResponse.data : [];
 
-  // Pobieranie grup dodatków
   const { data: addonGroupsResponse } = useQuery({
     queryKey: ['addon-groups'],
-    queryFn: () => menuApi.getAddonGroups()
+    queryFn: () => menuApi.getAddonGroups(),
+    enabled: isOpen,
+    staleTime: 3 * 60 * 1000,
   });
   const addonGroups = addonGroupsResponse?.success ? addonGroupsResponse.data : [];
 
@@ -252,48 +251,32 @@ export const OrderCreator: React.FC<OrderCreatorProps> = ({ isOpen, onClose, edi
     };
   }, []);
 
-  // Debugowanie danych
-  useEffect(() => {
-    console.log('=== DEBUG HALF-HALF ===');
-    console.log('halfHalfConfigs:', halfHalfConfigs);
-    console.log('allMenuItems length:', allMenuItems.length);
-    console.log('allMenuItems loading:', allMenuItemsLoading);
-    console.log('halfHalfCategory:', halfHalfCategory);
-    if (halfHalfCategory) {
-      console.log('Available dishes for category:', getHalfHalfDishes(halfHalfCategory));
-    }
-    console.log('========================');
-  }, [halfHalfConfigs, allMenuItems, halfHalfCategory]);
-
-  // Ponownie sprawdź opcje pół na pół po załadowaniu danych
-  useEffect(() => {
-    if (!allMenuItemsLoading && allMenuItems.length > 0 && halfHalfConfigs.length > 0) {
-      console.log('🔄 Re-checking half-half options after data load');
-      // Force re-render by updating a dummy state
-      setHalfHalfCategory(prev => prev);
-    }
-  }, [allMenuItemsLoading, allMenuItems.length, halfHalfConfigs.length]);
-
   const createOrderMutation = useMutation({
     mutationFn: ordersApi.createOrder,
     onSuccess: (response) => {
-      // Wywołaj callback z nowym zamówieniem
-      if (onOrderCreated && response.data) {
-        onOrderCreated(response.data);
+      const newOrder = response?.data;
+      if (newOrder) {
+        if (onOrderCreated) onOrderCreated(newOrder);
+        window.dispatchEvent(new CustomEvent('orderCreated', { detail: newOrder }));
+        // Natychmiastowa aktualizacja listy – nowe zamówienie w cache (bez refetch = bez opóźnienia)
+        queryClient.setQueriesData(
+          { queryKey: ['orders'] },
+          (old: any) => {
+            if (!old?.data?.orders || old.data.orders.some((o: any) => o.id === newOrder.id)) return old;
+            return {
+              ...old,
+              data: {
+                ...old.data,
+                orders: [newOrder, ...old.data.orders],
+                total: (old.data.total ?? 0) + 1,
+              },
+            };
+          }
+        );
+        // Tylko mapa i geo – bez invalidate listy, żeby nie uruchamiać refetch (wolne)
+        queryClient.invalidateQueries({ queryKey: ['orders-geo'] });
+        queryClient.invalidateQueries({ queryKey: ['orders-map'] });
       }
-      
-      // Wyślij globalny event dla synchronizacji między stronami
-      if (response.data) {
-        window.dispatchEvent(new CustomEvent('orderCreated', { 
-          detail: response.data 
-        }));
-      }
-      
-      // Invalidate all order queries to refresh map and list
-      queryClient.invalidateQueries({ queryKey: ['orders'] });
-      queryClient.invalidateQueries({ queryKey: ['orders-geo'] });
-      queryClient.invalidateQueries({ queryKey: ['orders-map'] });
-      // Otwórz bon po pomyślnym złożeniu zamówienia
       setShowReceiptModal(true);
     },
     onError: (error) => {
@@ -305,31 +288,16 @@ export const OrderCreator: React.FC<OrderCreatorProps> = ({ isOpen, onClose, edi
   const updateOrderMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateOrderRequest }) => ordersApi.updateOrder(id, data),
     onSuccess: async (response) => {
-      console.log('✅ Order updated successfully:', response.data);
-      
-      // Invalidate all order queries to refresh map and list
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       queryClient.invalidateQueries({ queryKey: ['orders-geo'] });
       queryClient.invalidateQueries({ queryKey: ['orders-map'] });
-      
-      // Odśwież dane zamówienia z bazy danych
+
       if (editOrder && response.data) {
-        console.log('🔄 Refreshing order data from database...');
         try {
           const refreshedOrder = await ordersApi.getOrderById(editOrder.id);
-          console.log('📦 Refreshed order data:', refreshedOrder);
-          
-          // Aktualizuj lokalne dane zamówienia
           if (refreshedOrder.success && refreshedOrder.data) {
-            // Wywołaj callback z odświeżonymi danymi
-            if (onOrderUpdated) {
-              onOrderUpdated(refreshedOrder.data);
-            }
-            
-            // Wyślij globalny event dla synchronizacji między stronami
-            window.dispatchEvent(new CustomEvent('orderUpdated', { 
-              detail: refreshedOrder.data 
-            }));
+            if (onOrderUpdated) onOrderUpdated(refreshedOrder.data);
+            window.dispatchEvent(new CustomEvent('orderUpdated', { detail: refreshedOrder.data }));
           }
         } catch (error) {
           console.error('❌ Error refreshing order data:', error);
@@ -1699,16 +1667,20 @@ export const OrderCreator: React.FC<OrderCreatorProps> = ({ isOpen, onClose, edi
             </div>
             
             <div className="categories-list">
-              {categories?.map(category => (
-                <div
-                  key={category.id}
-                  className={`category-item ${selectedCategory === category.id ? 'selected' : ''}`}
-                  onClick={() => setSelectedCategory(category.id)}
-                >
-                  <span className="category-name">{category.name}</span>
-                  <span className="category-count">{category.itemCount}</span>
-                </div>
-              ))}
+              {categoriesLoading ? (
+                <div className="menu-loading">Ładowanie kategorii…</div>
+              ) : (
+                categories?.map(category => (
+                  <div
+                    key={category.id}
+                    className={`category-item ${selectedCategory === category.id ? 'selected' : ''}`}
+                    onClick={() => setSelectedCategory(category.id)}
+                  >
+                    <span className="category-name">{category.name}</span>
+                    <span className="category-count">{category.itemCount}</span>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
@@ -1719,25 +1691,65 @@ export const OrderCreator: React.FC<OrderCreatorProps> = ({ isOpen, onClose, edi
             </div>
             
             <div className="menu-items-grid">
-              {menuItems?.map(item => (
-                <div
-                  key={item.id}
-                  className="menu-item-card"
-                  onClick={() => addItemToOrder(item)}
-                >
-                  <div className="item-name">{item.name}</div>
-                  <div className="item-price">{(item.price || 0).toFixed(2)} zł</div>
-                </div>
-              ))}
+              {menuItemsLoading && selectedCategory ? (
+                <div className="menu-loading">Ładowanie dań…</div>
+              ) : (
+                menuItems?.map(item => (
+                  <div
+                    key={item.id}
+                    className="menu-item-card"
+                    onClick={() => addItemToOrder(item)}
+                  >
+                    <div className="item-name">{item.name}</div>
+                    <div className="item-price">{(item.price || 0).toFixed(2)} zł</div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
           {/* Prawy panel - Podsumowanie zamówienia */}
           <div className="order-summary-panel">
-            <div className="panel-header">
-              <h3>Zamówienie: Nowe</h3>
+            {/* TYP ODBIORU – wybór rodzaju zamówienia na górze popupu */}
+            <div className="pickup-type-section">
+              <label className="pickup-type-label">TYP ODBIORU *</label>
+              <div className="button-group pickup-type-buttons">
+                <button
+                  type="button"
+                  className={`option-btn ${customerData.pickupType === 'dine_in' ? 'active' : ''}`}
+                  onClick={() => handleCustomerDataChange('pickupType', 'dine_in')}
+                >
+                  🏠 Na miejscu
+                </button>
+                <button
+                  type="button"
+                  className={`option-btn ${customerData.pickupType === 'takeaway' ? 'active' : ''}`}
+                  onClick={() => handleCustomerDataChange('pickupType', 'takeaway')}
+                >
+                  📦 Na wynos
+                </button>
+                <button
+                  type="button"
+                  className={`option-btn ${customerData.pickupType === 'delivery' ? 'active' : ''}`}
+                  onClick={() => handleCustomerDataChange('pickupType', 'delivery')}
+                >
+                  🚚 Dostawa
+                </button>
+              </div>
+              {customerData.pickupType === 'dine_in' && (
+                <div className="table-number-inline">
+                  <label>Numer stolika *</label>
+                  <input
+                    type="text"
+                    value={customerData.tableNumber}
+                    onChange={(e) => handleCustomerDataChange('tableNumber', e.target.value)}
+                    className="form-input table-number-input"
+                    placeholder="np. 5, A1, VIP"
+                  />
+                </div>
+              )}
             </div>
-            
+
             <div className="customer-section">
               <div className="customer-info">
                 <div className="info-row">
@@ -2924,9 +2936,9 @@ export const OrderCreator: React.FC<OrderCreatorProps> = ({ isOpen, onClose, edi
         </div>
       )}
 
-      {/* Modal konfiguracji dania */}
-      {showItemConfigModal && selectedItemForConfig && (
-        <div className="customer-modal-overlay">
+      {/* Modal konfiguracji dania – w Portalu do body, żeby był wyśrodkowany na ekranie */}
+      {showItemConfigModal && selectedItemForConfig && createPortal(
+        <div className="customer-modal-overlay item-config-overlay">
           <div className="item-config-modal">
             <div className="customer-modal-header">
               <div className="modal-title">
@@ -2958,9 +2970,8 @@ export const OrderCreator: React.FC<OrderCreatorProps> = ({ isOpen, onClose, edi
             </div>
             
             <div className="item-config-content">
-              {/* Etap 1: Konfiguracja (rozmiary + dodatki) */}
-              {currentStep === 'config' && (
-                <div className="item-configuration">
+              {/* Jedna strona: rozmiar, dodatki i podsumowanie */}
+              <div className="item-configuration item-config-single-page">
                   {isHalfHalfMode ? (
                     // Tryb pół na pół
                     <div className="half-half-configuration">
@@ -3157,35 +3168,10 @@ export const OrderCreator: React.FC<OrderCreatorProps> = ({ isOpen, onClose, edi
                     />
                   </div>
 
-                  {/* Przycisk przejścia do podsumowania */}
-                  <div className="config-actions">
-                    <button 
-                      className="continue-btn" 
-                      onClick={handleGoToSummary}
-                      disabled={isHalfHalfMode ? (!leftHalfDish || !rightHalfDish || !leftHalfSize) : !selectedSize}
-                    >
-                      Kontynuuj
-                    </button>
-                    {isHalfHalfMode && (
-                      <div style={{fontSize: '0.75rem', color: '#666', marginTop: '0.5rem'}}>
-                        Debug: leftHalfDish={leftHalfDish?.name || 'null'}, rightHalfDish={rightHalfDish?.name || 'null'}, leftHalfSize={leftHalfSize?.name || 'null'}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Etap 2: Podsumowanie */}
-              {currentStep === 'summary' && (
-                <div className="item-summary">
-                  <div className="summary-header">
-                    <button className="back-btn" onClick={handleBackToConfig}>
-                      ← Wróć
-                    </button>
-                    <h4>Podsumowanie</h4>
-                  </div>
-                  
-                  <div className="summary-item">
+                  {/* Podsumowanie na tej samej stronie */}
+                  <div className="item-summary-inline">
+                    <h4 className="summary-inline-title">Podsumowanie</h4>
+                    <div className="summary-item">
                     <h5>{isHalfHalfMode ? 'Danie pół na pół' : 'Aktualne danie'}</h5>
                     <div className="item-details">
                       {isHalfHalfMode ? (
@@ -3237,11 +3223,12 @@ export const OrderCreator: React.FC<OrderCreatorProps> = ({ isOpen, onClose, edi
                           for (const group of addonGroups || []) {
                             const addon = group.addonItems?.find(a => a.id === addonId);
                             if (addon) {
+                              const count = addonCounts[addonId] || 1;
                               return (
                                 <div key={`config-${addonId}`} className="selected-addon">
-                                  <span>{addon.name}</span>
+                                  <span>{addon.name}{count > 1 ? ` ×${count}` : ''}</span>
                                   {addon.price > 0 && (
-                                    <span>+{(addon.price || 0).toFixed(2)} zł</span>
+                                    <span>+{((addon.price || 0) * count).toFixed(2)} zł</span>
                                   )}
                                 </div>
                               );
@@ -3258,29 +3245,6 @@ export const OrderCreator: React.FC<OrderCreatorProps> = ({ isOpen, onClose, edi
                     <button onClick={() => setItemQuantity(itemQuantity + 1)}>+</button>
                   </div>
                   
-                  {/* Pole komentarza do dania */}
-                  <div className="item-notes-section">
-                    <label htmlFor="item-notes">Komentarz do dania (opcjonalnie):</label>
-                    <textarea
-                      id="item-notes"
-                      value={editingItemId ? (orderItems.find(item => item.id === editingItemId)?.notes || '') : itemNotes}
-                      onChange={(e) => {
-                        if (editingItemId) {
-                          setOrderItems(prev => prev.map(item => 
-                            item.id === editingItemId 
-                              ? { ...item, notes: e.target.value }
-                              : item
-                          ));
-                        } else {
-                          setItemNotes(e.target.value);
-                        }
-                      }}
-                      placeholder="np. bez cebuli, bardzo ostre, na wynos..."
-                      className="item-notes-input"
-                      rows={3}
-                    />
-                  </div>
-                  
                   <div className="total-price">
                     <span>Łączna cena: {
                       isHalfHalfMode 
@@ -3290,21 +3254,26 @@ export const OrderCreator: React.FC<OrderCreatorProps> = ({ isOpen, onClose, edi
                           .reduce((sum, [addonId, _]) => {
                             for (const group of addonGroups || []) {
                               const addon = group.addonItems?.find(a => a.id === addonId);
-                              if (addon) return sum + addon.price;
+                              if (addon) return sum + (addon.price || 0) * (addonCounts[addonId] || 1);
                             }
                             return sum;
                           }, 0)).toFixed(2)
                     } zł</span>
                   </div>
                   
-                  <button className="add-to-order-btn" onClick={handleAddToOrder}>
+                  <button
+                    className="add-to-order-btn"
+                    onClick={handleAddToOrder}
+                    disabled={isHalfHalfMode ? (!leftHalfDish || !rightHalfDish || !leftHalfSize) : !selectedSize}
+                  >
                     {editingItemId ? '💾 Zaktualizuj' : '🛒 Dodaj'}
                   </button>
                 </div>
-              )}
+              </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Modal bonu */}

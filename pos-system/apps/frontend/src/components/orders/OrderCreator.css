@@ -1,6 +1,7 @@
+/* Overlay bez scrolla – przewija się tylko koszyk w środku modala */
 .order-creator-overlay {
   position: fixed;
-  top: 5.44rem;
+  top: var(--modal-top, var(--nav-height, 6.5rem));
   left: 0;
   right: 0;
   bottom: 0;
@@ -9,22 +10,28 @@
   justify-content: center;
   align-items: center;
   z-index: 10000;
-  padding: 1rem;
-  padding-top: 1rem;
-  padding-bottom: 1rem;
+  padding: var(--modal-overlay-padding, 1.5rem);
+  overflow: hidden;
 }
 
 .order-creator-modal {
   background: #ffffff;
-  border-radius: 12px;
+  border-radius: var(--modal-border-radius, 12px);
   width: 100%;
-  max-width: 1600px;
-  height: calc(100vh - 5.44rem - 2rem);
-  max-height: calc(100vh - 5.44rem - 2rem);
+  max-width: min(1600px, 95vw);
+  /* Wysokość dopasowana do okna, żeby overlay nigdy nie scrollował */
+  height: 100%;
+  max-height: calc(100vh - var(--modal-top, var(--nav-height, 6.5rem)) - 2 * var(--modal-overlay-padding, 1.5rem));
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--modal-shadow);
   overflow: hidden;
+  margin: auto;
+}
+
+.order-creator-modal .modal-header {
+  flex-shrink: 0;
 }
 
 .modal-header {
@@ -67,12 +74,14 @@
 .order-creator-content {
   display: flex;
   flex: 1;
+  min-height: 0;
   overflow: hidden;
 }
 
 /* Lewy panel - Kategorie menu */
 .menu-categories-panel {
   width: 280px;
+  min-height: 0;
   background: #f8f9fa;
   border-right: 1px solid #e5e7eb;
   display: flex;
@@ -105,6 +114,13 @@
   flex: 1;
   overflow-y: auto;
   padding: 0.5rem;
+}
+
+.menu-loading {
+  padding: 1.5rem;
+  text-align: center;
+  color: #6b7280;
+  font-size: 0.9375rem;
 }
 
 .category-item {
@@ -153,6 +169,8 @@
 /* Środkowy panel - Pozycje menu */
 .menu-items-panel {
   flex: 2;
+  min-width: 0;
+  min-height: 0;
   background: #ffffff;
   display: flex;
   flex-direction: column;
@@ -161,6 +179,7 @@
 }
 
 .panel-header {
+  flex-shrink: 0;
   padding: 1rem 1.5rem;
   border-bottom: 1px solid #e5e7eb;
   background: #f9fafb;
@@ -175,6 +194,7 @@
 
 .menu-items-grid {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: 1rem;
   display: grid;
@@ -216,9 +236,11 @@
   font-size: 0.875rem;
 }
 
-/* Prawy panel - Podsumowanie zamówienia */
+/* Prawy panel - Podsumowanie zamówienia (koszyk); stała wysokość, scroll w liście */
 .order-summary-panel {
   width: 450px;
+  min-width: 0;
+  min-height: 0;
   background: #f8f9fa;
   border-left: 1px solid #e5e7eb;
   display: flex;
@@ -226,7 +248,67 @@
   overflow: hidden;
 }
 
+/* TYP ODBIORU – na górze prawego panelu; nie rozciąga się */
+.pickup-type-section {
+  flex-shrink: 0;
+  padding: 1rem 1.25rem;
+  background: #ffffff;
+  border-radius: 12px;
+  margin: 1rem 1rem 0.5rem;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.pickup-type-label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #1e3a8a;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  margin-bottom: 0.75rem;
+}
+
+.pickup-type-section .button-group {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.pickup-type-section .option-btn {
+  flex: 1;
+  min-width: 0;
+}
+
+.table-number-inline {
+  margin-top: 1rem;
+}
+
+.table-number-inline label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.5rem;
+}
+
+.table-number-input {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  background: #ffffff;
+}
+
+.table-number-input:focus {
+  outline: none;
+  border-color: #2233AA;
+  box-shadow: 0 0 0 2px rgba(34, 51, 170, 0.15);
+}
+
 .customer-section {
+  flex-shrink: 0;
   padding: 1rem;
   border-bottom: 1px solid #e5e7eb;
   background: #ffffff;
@@ -275,6 +357,7 @@
 
 .order-items-section {
   flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -285,6 +368,7 @@
 }
 
 .items-header {
+  flex-shrink: 0;
   display: grid;
   grid-template-columns: 2fr 1fr 1fr 1fr;
   gap: 0.5rem;
@@ -301,6 +385,7 @@
 
 .empty-items {
   flex: 1;
+  min-height: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -309,9 +394,12 @@
   font-style: italic;
 }
 
+/* Lista pozycji w koszyku – scroll zamiast powiększania popupu */
 .items-list {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
   background: #ffffff;
 }
 
@@ -425,6 +513,7 @@
 }
 
 .order-total {
+  flex-shrink: 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -448,6 +537,7 @@
 }
 
 .order-actions {
+  flex-shrink: 0;
   padding: 1rem;
   background: #f8f9fa;
   border-top: 1px solid #e5e7eb;
@@ -482,7 +572,8 @@
 @media (max-width: 1200px) {
   .order-creator-modal {
     max-width: 95vw;
-    height: 95vh;
+    height: var(--modal-max-height);
+    max-height: var(--modal-max-height);
   }
   
   .menu-categories-panel {
@@ -495,6 +586,16 @@
 }
 
 @media (max-width: 768px) {
+  .order-creator-overlay {
+    align-items: flex-start;
+    padding: 0.75rem;
+  }
+
+  .order-creator-modal {
+    max-height: min(98vh, var(--modal-max-height));
+    max-width: 100vw;
+  }
+
   .order-creator-content {
     flex-direction: column;
   }
@@ -502,15 +603,17 @@
   .menu-categories-panel,
   .order-summary-panel {
     width: 100%;
-    height: auto;
+    min-height: 0;
   }
   
   .menu-categories-panel {
     max-height: 200px;
+    flex-shrink: 0;
   }
   
   .order-summary-panel {
-    max-height: 300px;
+    flex: 1;
+    max-height: 40vh;
   }
   
   .menu-items-grid {
@@ -522,27 +625,53 @@
 /* Modal z danymi klienta */
 .customer-modal-overlay {
   position: fixed;
-  top: 5.44rem;
+  top: var(--modal-top, var(--nav-height, 6.5rem));
   left: 0;
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
-  align-items: flex-start;
+  align-items: center;
   z-index: 10001;
-  padding: 1rem;
-  padding-top: 2rem;
+  padding: var(--modal-overlay-padding, 1.5rem);
+  overflow-y: auto;
+}
+
+/* Popup konfiguracji dania – tak samo jak edytor zamówienia (OrderEditModal): cały na środku ekranu */
+.item-config-overlay {
+  position: fixed;
+  top: var(--modal-top, var(--nav-height, 6.5rem));
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10001;
+  padding: var(--modal-overlay-padding, 1.5rem);
+  overflow-y: auto;
+}
+
+.item-config-overlay .item-config-modal {
+  position: relative;
+  margin: auto;
+  flex-shrink: 0;
+  max-width: 560px;
+  width: 100%;
+  max-height: var(--modal-max-height);
 }
 
 .customer-modal {
   background: #ffffff;
-  border-radius: 16px;
+  border-radius: var(--modal-border-radius, 12px);
   width: 100%;
-  max-width: 1000px;
-  max-height: calc(100vh - 5.44rem - 2rem);
+  max-width: 960px;
+  max-height: var(--modal-max-height);
   overflow-y: auto;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--modal-shadow);
+  margin: auto;
 }
 
 .customer-modal-header {
@@ -945,9 +1074,20 @@
 
 /* Responsywność dla modala */
 @media (max-width: 768px) {
+  .customer-modal-overlay {
+    align-items: flex-start;
+    padding: 0.75rem;
+  }
+
+  .item-config-overlay {
+    align-items: center;
+    justify-content: center;
+  }
+
   .customer-modal {
-    max-width: 95vw;
-    margin: 1rem;
+    max-width: 100%;
+    max-height: min(95vh, var(--modal-max-height));
+    margin: 0;
   }
   
   .customer-form-content {
@@ -1083,29 +1223,74 @@
 /* Style dla modala konfiguracji dania */
 .item-config-modal {
   background: #ffffff;
-  border-radius: 16px;
+  border-radius: var(--modal-border-radius, 12px);
   width: 100%;
-  max-width: 800px;
-  height: 80vh;
-  max-height: 600px;
+  max-width: 560px;
+  min-width: 340px;
+  max-height: var(--modal-max-height);
   display: flex;
   flex-direction: column;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--modal-shadow);
   overflow: hidden;
+  margin: auto;
+}
+
+/* Nagłówek i przycisk X – pewny padding, X nie ucięty */
+.item-config-modal .customer-modal-header {
+  flex-shrink: 0;
+  padding: 1.25rem 1.5rem;
+  gap: 1rem;
+}
+
+.item-config-modal .customer-modal-header .modal-title {
+  flex: 1;
+  min-width: 0;
+}
+
+.item-config-modal .customer-modal-header .close-btn {
+  flex-shrink: 0;
+  width: 2.5rem;
+  height: 2.5rem;
+  min-width: 2.5rem;
+  min-height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  padding: 0;
+  border-radius: 8px;
+}
+
+.item-config-modal .customer-modal-header .close-btn:hover {
+  background: #e5e7eb;
 }
 
 .item-config-content {
   flex: 1;
-  padding: 2rem;
+  padding: 1.5rem 1.5rem 2rem;
   overflow-y: auto;
+  min-height: 0;
 }
 
-/* Etap 1: Konfiguracja (rozmiary + dodatki) */
+/* Konfiguracja (rozmiary + dodatki) – jedna strona z podsumowaniem */
 .item-configuration {
   display: flex;
   flex-direction: column;
   gap: 2rem;
   height: 100%;
+}
+
+.item-config-single-page .item-summary-inline {
+  margin-top: 0.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.item-config-single-page .summary-inline-title {
+  margin: 0 0 1rem 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #374151;
 }
 
 .size-selection h4 {
@@ -1261,8 +1446,10 @@
 
 .config-actions {
   display: flex;
-  justify-content: center;
-  padding-top: 1rem;
+  justify-content: flex-end;
+  padding-top: 1.5rem;
+  padding-bottom: 0.25rem;
+  margin-top: 1rem;
   border-top: 1px solid #e5e7eb;
 }
 
@@ -1439,17 +1626,31 @@
   gap: 0.5rem;
 }
 
-.add-to-order-btn:hover {
+.add-to-order-btn:hover:not(:disabled) {
   background: #059669;
 }
 
-/* Responsywność */
+.add-to-order-btn:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+/* Responsywność – modal konfiguracji dania */
 @media (max-width: 768px) {
   .item-config-modal {
-    max-width: 95%;
-    height: 90vh;
+    max-width: calc(100vw - var(--modal-overlay-padding, 1.5rem) * 2);
+    min-width: 0;
+    max-height: min(90vh, var(--modal-max-height));
   }
-  
+
+  .item-config-modal .customer-modal-header {
+    padding: 1rem 1.25rem;
+  }
+
+  .item-config-content {
+    padding: 1.25rem 1.25rem 1.5rem;
+  }
+
   .item-configuration {
     gap: 1.5rem;
   }
@@ -1694,7 +1895,7 @@
   border-radius: 16px;
   width: 100%;
   max-width: 1600px;
-  max-height: calc(100vh - 5.44rem - 2rem);
+  max-height: calc(100vh - var(--nav-height, 6.5rem) - 2rem);
   display: flex;
   flex-direction: column;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
@@ -2082,22 +2283,33 @@
 .half-dishes-container {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-  align-items: start; /* Wyrównaj kolumny do góry */
+  gap: 1rem 1.5rem;
+  align-items: stretch;
+}
+
+.half-dish-section {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .half-dish-section h6 {
   margin: 0 0 0.75rem 0;
+  padding: 0 0.25rem;
   font-size: 0.875rem;
   font-weight: 600;
   color: #374151;
   text-align: center;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .half-dish-options {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  height: 200px;
+  min-height: 200px;
   max-height: 200px;
   overflow-y: auto;
 }
@@ -2205,11 +2417,28 @@
 }
 
 .item-notes-section {
-  margin-top: 1rem;
+  margin-top: 1.25rem;
   padding: 1rem;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
+}
+
+.item-notes-section .item-notes-input {
+  width: 100%;
+  min-height: 80px;
+  padding: 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  font-size: 0.875rem;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.item-notes-section .item-notes-input:focus {
+  outline: none;
+  border-color: #2233AA;
+  box-shadow: 0 0 0 2px rgba(34, 51, 170, 0.15);
 }
 
 .item-notes-section label {
@@ -2290,19 +2519,30 @@
 .half-addons-container {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-  align-items: start;
+  gap: 1rem 1.5rem;
+  align-items: stretch;
+}
+
+.half-addon-section {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .half-addon-section h6 {
   margin: 0 0 0.75rem 0;
+  padding: 0 0.25rem;
   font-size: 0.875rem;
   font-weight: 600;
   color: #374151;
   text-align: center;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .half-addon-options {
+  height: 200px;
+  min-height: 200px;
   max-height: 200px;
   overflow-y: auto;
 }
@@ -2476,6 +2716,7 @@
 }
 
 .half-category-header {
+  grid-column: 1 / -1; /* na pełną szerokość – Lewa i Prawa połowa w jednym rzędzie */
   display: flex;
   justify-content: space-between;
   align-items: center;

@@ -1,11 +1,11 @@
 /* Layout główny */
 .orders-map-layout {
   display: flex;
-  height: calc(100vh - 5.44rem);
+  height: calc(100vh - var(--nav-height, 6.5rem));
   background: #fafafa;
   overflow: hidden;
   position: fixed;
-  top: 5.44rem;
+  top: var(--nav-height, 6.5rem);
   left: 0;
   right: 0;
   bottom: 0;
@@ -590,8 +590,15 @@
   flex: 1;
   position: relative;
   min-width: 0;
+  min-height: 300px; /* Leaflet wymaga jawnej wysokości – fallback gdy flex nie ustawi */
   overflow: hidden;
   box-sizing: border-box;
+}
+
+/* Kontener mapy Leaflet – wymuszenie wysokości */
+.map-container .leaflet-container {
+  height: 100% !important;
+  min-height: 300px;
 }
 
 /* Stany ładowania i puste */
@@ -668,15 +675,17 @@
 /* Driver Assignment Modal */
 .driver-assignment-modal {
   position: fixed;
-  top: 0;
+  top: var(--modal-top, var(--nav-height, 6.5rem));
   left: 0;
-  width: 100vw;
-  height: 100vh;
+  right: 0;
+  bottom: 0;
   z-index: 9999;
   display: flex;
   align-items: center;
   justify-content: center;
   background: rgba(0, 0, 0, 0.6);
+  padding: var(--modal-overlay-padding, 1.5rem);
+  overflow-y: auto;
 }
 
 .modal-overlay {
@@ -691,11 +700,11 @@
 .modal-content {
   position: relative;
   background: #ffffff !important;
-  border-radius: 12px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  width: 90%;
-  max-width: 500px;
-  max-height: 80vh;
+  border-radius: var(--modal-border-radius, 12px);
+  box-shadow: var(--modal-shadow);
+  width: 100%;
+  max-width: 520px;
+  max-height: var(--modal-max-height);
   overflow: hidden;
   animation: modalSlideIn 0.3s ease-out;
   z-index: 10000 !important;
@@ -796,9 +805,16 @@
 }
 
 @media (max-width: 768px) {
+  .driver-assignment-modal {
+    padding: 0.75rem;
+    align-items: flex-start;
+  }
+
   .modal-content {
-    width: 95%;
-    margin: 1rem;
+    width: 100%;
+    max-width: 100%;
+    max-height: min(95vh, var(--modal-max-height));
+    margin: 0;
   }
 }
 
