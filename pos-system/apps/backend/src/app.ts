@@ -28,40 +28,50 @@ export async function createApp() {
 
   // Security middleware
   app.use(helmet());
+
+  // CORS: allow explicit list + any *.vercel.app (production + preview deployments)
+  const explicitOrigins = process.env.NODE_ENV === 'production'
+    ? [
+        'https://pos-system-frontend.vercel.app',
+        'https://pos-system-frontend-two.vercel.app',
+        'https://pos-system-frontend-flax.vercel.app',
+        'https://empapp-lfjl87tx3-macieja83s-projects.vercel.app',
+        'https://empapp-75n5xj9wj-macieja83s-projects.vercel.app',
+        'https://empapp-r9kyllvkd-macieja83s-projects.vercel.app',
+        'https://empapp-6rehstvhw-macieja83s-projects.vercel.app',
+        ...(process.env.CORS_ORIGINS?.split(',').map((o) => o.trim()).filter(Boolean) || [])
+      ]
+    : [
+        'http://localhost:5173',
+        'http://localhost:8081',
+        'http://localhost:8082',
+        'http://localhost:3000',
+        'http://localhost:3001',
+        'http://192.168.1.60:8081',
+        'http://192.168.1.61:8081',
+        'http://192.168.1.100:4000',
+        'http://192.168.1.66:8081',
+        'http://192.168.1.66:8082',
+        'http://192.168.1.66:8083',
+        'http://192.168.1.66:8084',
+        'http://192.168.1.66:8085',
+        'http://192.168.1.66:8086',
+        'http://172.20.10.4:8081',
+        'http://172.20.10.4:8082',
+        'http://172.20.10.4:8083',
+        'http://172.20.10.4:8084',
+        'http://172.20.10.4:8085',
+        'http://172.20.10.4:8086'
+      ];
+
+  const vercelOriginRegex = /^https:\/\/[a-z0-9-]+\.vercel\.app$/;
   app.use(cors({
-    origin: process.env.NODE_ENV === 'production' 
-      ? [
-          'https://pos-system-frontend.vercel.app',
-          'https://pos-system-frontend-two.vercel.app',
-          'https://pos-system-frontend-flax.vercel.app',
-          'https://empapp-lfjl87tx3-macieja83s-projects.vercel.app',
-          'https://empapp-75n5xj9wj-macieja83s-projects.vercel.app',
-          'https://empapp-r9kyllvkd-macieja83s-projects.vercel.app',
-          'https://empapp-6rehstvhw-macieja83s-projects.vercel.app',
-          ...(process.env.CORS_ORIGINS?.split(',') || [])
-        ]
-      : [
-          'http://localhost:5173', 
-          'http://localhost:8081',
-          'http://localhost:8082', 
-          'http://localhost:3000',
-          'http://localhost:3001',
-          'http://192.168.1.60:8081',
-          'http://192.168.1.61:8081',
-          'http://192.168.1.100:4000',
-          'http://192.168.1.66:8081',
-          'http://192.168.1.66:8082',
-          'http://192.168.1.66:8083',
-          'http://192.168.1.66:8084',
-          'http://192.168.1.66:8085',
-          'http://192.168.1.66:8086',
-          'http://172.20.10.4:8081',
-          'http://172.20.10.4:8082',
-          'http://172.20.10.4:8083',
-          'http://172.20.10.4:8084',
-          'http://172.20.10.4:8085',
-          'http://172.20.10.4:8086'
-        ],
+    origin: (origin, cb) => {
+      if (origin == null) return cb(null, true); // same-origin or tools like Postman
+      if (explicitOrigins.includes(origin)) return cb(null, true);
+      if (process.env.NODE_ENV === 'production' && vercelOriginRegex.test(origin)) return cb(null, true);
+      cb(null, false);
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
