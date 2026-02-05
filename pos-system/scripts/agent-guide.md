@@ -43,7 +43,7 @@ node scripts/navigation-helper.js relative frontend
 ```
 
 ### 2. PowerShell Commands
-**File:** `scripts/agent-commands.ps1`
+**File:** `scripts/agent-commands.ps1` (główny skrypt nawigacji)
 
 ```powershell
 # Load the commands

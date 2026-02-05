@@ -4,7 +4,8 @@ import { OrdersService } from '../services/orders.service';
 import {
     OrderSummaryFilters,
     OrdersFiltersInput,
-    OrderType
+    OrderType,
+    UpdateOrderStatusInput
 } from '../types/local';
 
 // Local types for controller
@@ -353,8 +354,8 @@ export class OrdersController {
         }
       }
       
-      // Ensure paymentMethod is always passed through if provided
-      const order = await this.ordersService.updateOrderStatus(id, statusData, user?.id);
+      // Ensure paymentMethod is always passed through if provided (cast: validated role may be inferred as unknown by TS)
+      const order = await this.ordersService.updateOrderStatus(id, statusData as UpdateOrderStatusInput, user?.id);
       
       console.log('✅ Order status updated successfully:', {
         orderId: id,

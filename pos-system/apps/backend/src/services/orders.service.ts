@@ -1,6 +1,7 @@
 import { OrdersRepository } from '../repos/orders.repo';
 import { EmployeesRepository } from '../repos/employees.repo';
 import { OrderStatus, OrderSummaryFilters, OrderSummaryResponse, OrdersFiltersInput, CreateOrderInput, UpdateOrderStatusInput } from '../types/local';
+import { AppError } from '../middlewares/errorHandler';
 
 export class OrdersService {
   constructor(
@@ -50,7 +51,7 @@ export class OrdersService {
   async updateOrderStatus(id: string, data: UpdateOrderStatusInput, userId?: string) {
     const order = await this.ordersRepo.findById(id);
     if (!order) {
-      throw new Error(`Zamówienie o ID ${id} nie zostało znalezione`);
+      throw new AppError(`Zamówienie o ID ${id} nie zostało znalezione`, 404);
     }
 
     // AUTO-COMPLETE: If order is DELIVERED and paymentMethod is being set,
@@ -69,7 +70,7 @@ export class OrdersService {
 
     // Validate status transition only if status is being updated
     if (data.status && !this.isValidStatusTransition(order.status as OrderStatus, data.status)) {
-      throw new Error(`Nieprawidłowe przejście statusu z ${order.status} na ${data.status}`);
+      throw new AppError(`Nieprawidłowe przejście statusu z ${order.status} na ${data.status}`, 400);
     }
 
     // Build update data - ensure paymentMethod is preserved when status changes to COMPLETED
@@ -203,8 +204,8 @@ export class OrdersService {
     const validTransitions: Record<OrderStatus, OrderStatus[]> = {
       [OrderStatus.OPEN]: [OrderStatus.IN_PROGRESS, OrderStatus.READY, OrderStatus.COMPLETED, OrderStatus.CANCELLED, OrderStatus.ASSIGNED, OrderStatus.PENDING],
       [OrderStatus.PENDING]: [OrderStatus.OPEN, OrderStatus.IN_PROGRESS, OrderStatus.READY, OrderStatus.COMPLETED, OrderStatus.CANCELLED, OrderStatus.ASSIGNED],
-      [OrderStatus.IN_PROGRESS]: [OrderStatus.READY, OrderStatus.COMPLETED, OrderStatus.CANCELLED, OrderStatus.ASSIGNED],
-      [OrderStatus.READY]: [OrderStatus.COMPLETED, OrderStatus.CANCELLED, OrderStatus.ASSIGNED, OrderStatus.ON_THE_WAY],
+      [OrderStatus.IN_PROGRESS]: [OrderStatus.OPEN, OrderStatus.READY, OrderStatus.COMPLETED, OrderStatus.CANCELLED, OrderStatus.ASSIGNED],
+      [OrderStatus.READY]: [OrderStatus.OPEN, OrderStatus.IN_PROGRESS, OrderStatus.COMPLETED, OrderStatus.CANCELLED, OrderStatus.ASSIGNED, OrderStatus.ON_THE_WAY],
       [OrderStatus.ASSIGNED]: [OrderStatus.ON_THE_WAY, OrderStatus.COMPLETED, OrderStatus.CANCELLED, OrderStatus.DELIVERED],
       [OrderStatus.ON_THE_WAY]: [OrderStatus.DELIVERED, OrderStatus.COMPLETED, OrderStatus.CANCELLED],
       [OrderStatus.DELIVERED]: [OrderStatus.COMPLETED, OrderStatus.CANCELLED], // DELIVERED can go to COMPLETED or CANCELLED

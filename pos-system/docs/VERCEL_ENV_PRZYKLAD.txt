@@ -1,0 +1,20 @@
+# Zmienne do Vercel – skopiuj nazwy i wklej wartości z apps/backend/.env
+# Backend: Settings → Environment Variables (Production + Preview)
+# ================================================================
+
+DATABASE_URL=
+DIRECT_DATABASE_URL=
+JWT_SECRET=
+NODE_ENV=production
+
+# Opcjonalnie (backend już akceptuje *.vercel.app):
+# CORS_ORIGINS=https://pos-system-frontend.vercel.app
+
+# ================================================================
+# Frontend: tylko jedna zmienna (Production + Preview)
+# ================================================================
+
+VITE_API_URL=https://pos-system-backend.vercel.app/api
+
+# Jeśli backend ma inny URL, wpisz np.:
+# VITE_API_URL=https://twoj-backend.vercel.app/api

@@ -42,6 +42,13 @@ export default [
         NodeJS: 'readonly',
         RequestInit: 'readonly',
         global: 'readonly',
+        File: 'readonly',
+        FormData: 'readonly',
+        process: 'readonly',
+        performance: 'readonly',
+        PerformanceObserver: 'readonly',
+        MouseEvent: 'readonly',
+        Node: 'readonly',
       },
     },
     plugins: {

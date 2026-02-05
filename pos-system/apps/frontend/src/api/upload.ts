@@ -1,5 +1,3 @@
-import { apiClient } from './client';
-
 export interface UploadResponse {
   success: boolean;
   data?: {

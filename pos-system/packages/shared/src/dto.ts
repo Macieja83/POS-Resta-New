@@ -540,7 +540,7 @@ export const QuoteRequestSchema = z.object({
 });
 
 // Fixed CreateOrderRequestSchema with conditional validation
-export const CreateOrderRequestSchema = z.object({
+const CreateOrderRequestSchemaBase = z.object({
   type: z.nativeEnum(OrderType),
   customer: z.object({
     name: z.string().min(1),
@@ -622,19 +622,26 @@ export const CreateOrderRequestSchema = z.object({
   notes: z.string().optional(),
   tableNumber: z.string().optional(),
   promisedTime: z.number().positive().optional(),
-}).refine((data) => {
-  // For DELIVERY orders, address is required
-  if (data.type === OrderType.DELIVERY) {
-    return data.customer.address && 
-           data.customer.address.street && 
-           data.customer.address.city && 
-           data.customer.address.postalCode;
-  }
-  return true;
-}, {
-  message: "Address is required for delivery orders",
-  path: ["customer", "address"]
 });
+
+type CreateOrderRequestBase = {
+  type: OrderType;
+  customer: { address?: { street?: string; city?: string; postalCode?: string } };
+};
+
+export const CreateOrderRequestSchema = CreateOrderRequestSchemaBase.refine(
+  (data: CreateOrderRequestBase) => {
+    if (data.type === OrderType.DELIVERY) {
+      return !!(
+        data.customer.address?.street &&
+        data.customer.address?.city &&
+        data.customer.address?.postalCode
+      );
+    }
+    return true;
+  },
+  { message: "Address is required for delivery orders", path: ["customer", "address"] }
+);
 
 export const UpdateOrderStatusRequestSchema = z.object({
   status: z.nativeEnum(OrderStatus),

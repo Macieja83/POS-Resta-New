@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { OrderStatus, OrderType, EmployeeRole, PaymentMethod } from '../types/local';
+import { AppError } from '../middlewares/errorHandler';
 
 // Local schemas
 export const CreateOrderRequestSchema = z.object({
@@ -168,7 +169,10 @@ export const UpdateOrderStatusRequestSchema = z.object({
   completedBy: z.object({
     id: z.string(),
     name: z.string(),
-    role: z.nativeEnum(EmployeeRole),
+    role: z.preprocess(
+      (val) => (typeof val === 'string' ? val.toUpperCase() : val),
+      z.nativeEnum(EmployeeRole)
+    ),
   }).optional(),
 }).refine(data => data.status || data.paymentMethod, {
   message: 'Either status or paymentMethod must be provided',
@@ -202,7 +206,8 @@ export function validateInput<T>(schema: z.ZodSchema<T>, data: unknown): T {
     }));
     
     console.error('❌ Validation failed:', errors);
-    throw new Error(`Validation failed: ${errors.map(e => `${e.field}: ${e.message} (received: ${e.received})`).join(', ')}`);
+    const message = `Validation failed: ${errors.map(e => `${e.field}: ${e.message} (received: ${e.received})`).join(', ')}`;
+    throw new AppError(message, 400);
   }
   
   console.log('✅ Validation passed');

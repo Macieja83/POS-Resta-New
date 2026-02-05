@@ -17,10 +17,12 @@ module.exports = async function handler(req, res) {
     app(req, res);
   } catch (err) {
     console.error('❌ Vercel handler error:', err);
-    res.status(500).json({
-      status: 'error',
-      message: 'Backend failed to start. Check Vercel logs and DATABASE_URL.',
-      error: err.message || String(err)
-    });
+    if (!res.headersSent) {
+      res.status(500).json({
+        status: 'error',
+        message: 'Backend failed to start. Check Vercel logs and DATABASE_URL.',
+        error: err.message || String(err)
+      });
+    }
   }
 };

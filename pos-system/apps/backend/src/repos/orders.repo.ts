@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { OrdersFilters, OrderSummaryFilters, OrderSummaryResponse, OrderStatus } from '../types/local';
+import { AppError } from '../middlewares/errorHandler';
 
 export class OrdersRepository {
   constructor(private prisma: PrismaClient) {}
@@ -356,7 +357,7 @@ export class OrdersRepository {
     });
 
     if (!existingOrder) {
-      throw new Error(`Order with id ${id} not found`);
+      throw new AppError(`Zamówienie o podanym ID nie zostało znalezione`, 404);
     }
 
     console.log('🔄 Updating order status:', {

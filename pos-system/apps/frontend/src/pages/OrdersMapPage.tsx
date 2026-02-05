@@ -92,6 +92,7 @@ export const OrdersMapPage: React.FC = () => {
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
   const [pendingModalOrder, setPendingModalOrder] = useState<Order | null>(null);
   const [showPendingModal, setShowPendingModal] = useState(false);
+  const [showPendingBadge, setShowPendingBadge] = useState(false);
   const queryClient = useQueryClient();
 
   const isPendingStatus = (status?: string | null) => {

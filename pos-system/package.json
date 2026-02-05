@@ -16,7 +16,7 @@
     "doctor": "tsx scripts/doctor.ts",
     "fix:cache": "rimraf node_modules apps/*/node_modules packages/*/node_modules package-lock.json && npm install",
     "fix:prisma": "npm run db:generate --workspace=apps/backend",
-    "build": "npm run build --workspaces --if-present",
+    "build": "npm run build:frontend && npm run build:backend",
     "build:frontend": "npm run build --workspace=apps/frontend",
     "build:backend": "npm run build --workspace=apps/backend",
     "lint": "npm run lint --workspaces --if-present",
@@ -48,7 +48,8 @@
   "dependencies": {
     "@prisma/client": "^6.16.2",
     "postgres": "^3.4.7",
-    "prisma": "^6.16.2"
+    "prisma": "^6.16.2",
+    "zod": "^3.22.4"
   },
   "pnpm": {
     "onlyBuiltDependencies": ["@prisma/client", "prisma", "@prisma/engines"]

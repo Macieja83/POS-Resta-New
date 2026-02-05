@@ -86,6 +86,8 @@ export const errorHandler = (
   } else if (error.message && error.message.includes('ETIMEDOUT')) {
     statusCode = 504;
     message = 'Database connection timeout - please try again';
+  } else if (process.env.NODE_ENV === 'development' && error.message) {
+    message = error.message;
   }
 
   // Log error for debugging

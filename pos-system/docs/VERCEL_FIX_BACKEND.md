@@ -2,18 +2,26 @@
 
 ## Problem
 
-Backend i EmpApp zwracają błąd 404 na Vercel.
+Backend zwraca **404 NOT_FOUND** (z kodem typu `arn1::...`) – to odpowiedź **Vercel**, nie Expressa. Oznacza to, że Vercel nie znalazł żadnej serverless function dla tego adresu.
 
 ---
 
-## 🎯 Główny problem
+## 🎯 Dwie poprawne konfiguracje backendu
 
-**Vercel nie wie gdzie jest backend!**
+Backend może być deployowany z **jednym z dwóch** Root Directory. Ważne, żeby był **spójny** z resztą ustawień.
 
-Vercel deployment wymaga:
-1. ✅ **Root Directory** w ustawieniach projektu = `apps/backend`
-2. ✅ **vercel.json** w tym folderze
-3. ✅ **api/index.js** lub inny handler
+### Wariant A: Root = **`pos-system`** (monorepo)
+
+- Repo ma strukturę np. `POS-Resta-New/pos-system/api/`, `pos-system/apps/backend/`.
+- **Root Directory:** `pos-system` (albo `pos-system` jeśli repo to sam folder pos-system).
+- Używany jest plik **`pos-system/api/index.js`** – ładuje `../apps/backend/dist/app`, build: `pnpm run vercel:backend` z roota (w `pos-system/vercel.json`).
+
+### Wariant B: Root = **`apps/backend`**
+
+- **Root Directory:** `apps/backend` (albo `pos-system/apps/backend` jeśli repo ma nadkatalog `pos-system`).
+- Używany jest plik **`apps/backend/api/index.js`** – ładuje `../dist/app`, build: `npm run vercel-build` (w `apps/backend/vercel.json`).
+
+Jeśli ustawisz Root na `pos-system`, a w repozytorium kod jest w `pos-system/`, to **nie ustawiaj** Root na `apps/backend` – wtedy Vercel nie widzi `pos-system/api/index.js` i może zwracać 404. I na odwrót: przy Root = `apps/backend` musi być widoczny **`api/index.js`** wewnątrz tego folderu (już jest i ma poprawny handler).
 
 ---
 
@@ -112,15 +120,13 @@ ls api/index.js
 
 ---
 
-## 🚨 BŁĄD 404 - DLACZEGO?
-
-Backend 404 = Vercel nie może znaleźć server.js
+## 🚨 BŁĄD 404 NOT_FOUND (Vercel) – przyczyny
 
 **Możliwe przyczyny**:
-1. Root Directory źle ustawione
-2. Build się nie powiódł
-3. Plik server.js nie został wdrożony
-4. vercel.json źle skonfigurowany
+1. **Root Directory** – niezgodne ze strukturą repo (np. puste gdy repo ma `pos-system/` w środku → ustaw `pos-system` lub `pos-system/apps/backend`).
+2. **Brak pliku `api/index.js`** w wybranym rootcie – przy Root = `pos-system` musi być `pos-system/api/index.js`, przy Root = `apps/backend` musi być `apps/backend/api/index.js`.
+3. **Build** – przy Root = `pos-system` build musi tworzyć `apps/backend/dist/` (skrypt `vercel:backend`); przy Root = `apps/backend` – folder `dist/` w tym katalogu.
+4. Handler w `api/index.js` musi eksportować **funkcję (req, res)** – nie samą aplikację Express (to już poprawione w obu plikach).
 
 ---
 
