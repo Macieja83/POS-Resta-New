@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Order } from '../../types/shared';
+import { Employee, Order, OrderStatus, PaymentMethod } from '../../types/shared';
 import { ordersApi } from '../../api/orders';
 import { useAuth } from '../../contexts/AuthContext';
 import './OrderStatusChangeModal.css';
@@ -12,18 +12,18 @@ interface OrderStatusChangeModalProps {
   onOrderUpdated?: (updatedOrder: Order) => void;
 }
 
-const ORDER_STATUSES = [
-  { value: 'OPEN', label: 'Otwarte', color: '#3b82f6', icon: '📋', borderColor: '#3b82f6' },
-  { value: 'IN_PROGRESS', label: 'W realizacji', color: '#f59e0b', icon: '⏳', borderColor: '#f59e0b' },
-  { value: 'READY', label: 'Gotowe', color: '#10b981', icon: '✅', borderColor: '#10b981' },
-  { value: 'COMPLETED', label: 'Odebrane / Zapłacone', color: '#059669', icon: '🏁', borderColor: '#059669' },
-  { value: 'CANCELLED', label: 'Anulowane', color: '#ef4444', icon: '🚫', borderColor: '#ef4444' }
+const ORDER_STATUSES: Array<{ value: OrderStatus; label: string; color: string; icon: string; borderColor: string }> = [
+  { value: OrderStatus.OPEN, label: 'Otwarte', color: '#3b82f6', icon: '📋', borderColor: '#3b82f6' },
+  { value: OrderStatus.IN_PROGRESS, label: 'W realizacji', color: '#f59e0b', icon: '⏳', borderColor: '#f59e0b' },
+  { value: OrderStatus.READY, label: 'Gotowe', color: '#10b981', icon: '✅', borderColor: '#10b981' },
+  { value: OrderStatus.COMPLETED, label: 'Odebrane / Zapłacone', color: '#059669', icon: '🏁', borderColor: '#059669' },
+  { value: OrderStatus.CANCELLED, label: 'Anulowane', color: '#ef4444', icon: '🚫', borderColor: '#ef4444' }
 ];
 
-const PAYMENT_METHODS = [
-  { value: 'CASH', label: 'Gotówka', icon: '💵' },
-  { value: 'PAID', label: 'Zapłacone', icon: '✅' },
-  { value: 'CARD', label: 'Karta', icon: '💳' }
+const PAYMENT_METHODS: Array<{ value: PaymentMethod; label: string; icon: string }> = [
+  { value: PaymentMethod.CASH, label: 'Gotówka', icon: '💵' },
+  { value: PaymentMethod.PAID, label: 'Zapłacone', icon: '✅' },
+  { value: PaymentMethod.CARD, label: 'Karta', icon: '💳' }
 ];
 
 export const OrderStatusChangeModal: React.FC<OrderStatusChangeModalProps> = ({
@@ -32,20 +32,20 @@ export const OrderStatusChangeModal: React.FC<OrderStatusChangeModalProps> = ({
   onClose,
   onOrderUpdated
 }) => {
-  const [selectedStatus, setSelectedStatus] = useState<string>('');
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('');
+  const [selectedStatus, setSelectedStatus] = useState<OrderStatus | ''>('');
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | ''>('');
   const queryClient = useQueryClient();
   const { employee } = useAuth();
 
-  const isCompletionStatus = selectedStatus === 'COMPLETED' || selectedStatus === 'CANCELLED';
+  const isCompletionStatus = selectedStatus === OrderStatus.COMPLETED || selectedStatus === OrderStatus.CANCELLED;
 
   // Update order status mutation – optimistic update + cache update without refetch
   const updateStatusMutation = useMutation({
-    mutationFn: ({ orderId, status, paymentMethod, completedBy }: { 
-      orderId: string; 
-      status: string; 
-      paymentMethod?: string; 
-      completedBy?: any; 
+    mutationFn: ({ orderId, status, paymentMethod, completedBy }: {
+      orderId: string;
+      status: OrderStatus;
+      paymentMethod?: PaymentMethod;
+      completedBy?: Pick<Employee, 'id' | 'name' | 'role'>;
     }) =>
       ordersApi.updateOrderStatus(orderId, {
         status,
@@ -61,13 +61,14 @@ export const OrderStatusChangeModal: React.FC<OrderStatusChangeModalProps> = ({
       if (optimisticOrder) {
         queryClient.setQueriesData(
           { queryKey: ['orders'] },
-          (old: any) => {
-            if (!old?.data?.orders) return old;
+          (old: unknown) => {
+            const typedOld = old as { data?: { orders?: Order[] } } | undefined;
+            if (!typedOld?.data?.orders) return old;
             return {
-              ...old,
+              ...typedOld,
               data: {
-                ...old.data,
-                orders: old.data.orders.map((o: Order) =>
+                ...typedOld.data,
+                orders: typedOld.data.orders.map((o: Order) =>
                   o.id === variables.orderId ? optimisticOrder : o
                 )
               }
@@ -82,13 +83,14 @@ export const OrderStatusChangeModal: React.FC<OrderStatusChangeModalProps> = ({
       if (updated) {
         queryClient.setQueriesData(
           { queryKey: ['orders'] },
-          (old: any) => {
-            if (!old?.data?.orders) return old;
+          (old: unknown) => {
+            const typedOld = old as { data?: { orders?: Order[] } } | undefined;
+            if (!typedOld?.data?.orders) return old;
             return {
-              ...old,
+              ...typedOld,
               data: {
-                ...old.data,
-                orders: old.data.orders.map((o: Order) => (o.id === updated.id ? updated : o))
+                ...typedOld.data,
+                orders: typedOld.data.orders.map((o: Order) => (o.id === updated.id ? updated : o))
               }
             };
           }
@@ -115,8 +117,8 @@ export const OrderStatusChangeModal: React.FC<OrderStatusChangeModalProps> = ({
   // Initialize form when order changes
   React.useEffect(() => {
     if (order) {
-      setSelectedStatus(order.status || 'OPEN');
-      setSelectedPaymentMethod('CASH');
+      setSelectedStatus(order.status || OrderStatus.OPEN);
+      setSelectedPaymentMethod(PaymentMethod.CASH);
     }
   }, [order]);
 
