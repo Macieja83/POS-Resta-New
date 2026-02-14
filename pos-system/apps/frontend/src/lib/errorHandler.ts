@@ -1,4 +1,4 @@
-import { ApiError, ValidationError } from '../types/shared';
+import { ValidationError } from '../types/shared';
 
 export class AppError extends Error {
   public statusCode: number;

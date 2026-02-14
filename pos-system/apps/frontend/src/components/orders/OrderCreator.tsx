@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { ordersApi } from '../../api/orders';
@@ -40,7 +40,7 @@ export const OrderCreator: React.FC<OrderCreatorProps> = ({ isOpen, onClose, edi
   const [showItemConfigModal, setShowItemConfigModal] = useState(false);
   const [selectedItemForConfig, setSelectedItemForConfig] = useState<MenuItem | null>(null);
   const [selectedSize, setSelectedSize] = useState<{name: string, price?: number} | null>(null);
-  const [currentStep, setCurrentStep] = useState<'config' | 'summary'>('config');
+  const [_currentStep, setCurrentStep] = useState<'config' | 'summary'>('config');
   const [itemQuantity, setItemQuantity] = useState(1);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   
@@ -54,11 +54,11 @@ export const OrderCreator: React.FC<OrderCreatorProps> = ({ isOpen, onClose, edi
   const [itemNotes, setItemNotes] = useState('');
   const [leftHalfSize, setLeftHalfSize] = useState<{name: string, price?: number} | null>(null);
   const [rightHalfSize, setRightHalfSize] = useState<{name: string, price?: number} | null>(null);
-  const [isGeocoding, setIsGeocoding] = useState(false);
-  const [geocodingError, setGeocodingError] = useState<string | null>(null);
-  const [addressSuggestions, setAddressSuggestions] = useState<AddressSuggestion[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+  const [_isGeocoding, setIsGeocoding] = useState(false);
+  const [_geocodingError, setGeocodingError] = useState<string | null>(null);
+  const [_addressSuggestions, setAddressSuggestions] = useState<AddressSuggestion[]>([]);
+  const [_showSuggestions, setShowSuggestions] = useState(false);
+  const [_isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const [customerData, setCustomerData] = useState({
     name: '',
     phone: '+48123456789',

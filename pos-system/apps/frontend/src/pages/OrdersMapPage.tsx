@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ordersApi } from '../api/orders';
-import { Order, OrderType, PaymentMethod } from '../types/shared';
+import { Order, PaymentMethod } from '../types/shared';
 import { MapView } from '../components/map/MapView';
 import { OrderCreator } from '../components/orders/OrderCreator';
 import { OrderEditModal } from '../components/orders/OrderEditModal';
@@ -92,7 +92,7 @@ export const OrdersMapPage: React.FC = () => {
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
   const [pendingModalOrder, setPendingModalOrder] = useState<Order | null>(null);
   const [showPendingModal, setShowPendingModal] = useState(false);
-  const [showPendingBadge, setShowPendingBadge] = useState(false);
+  const [_showPendingBadge, setShowPendingBadge] = useState(false);
   const queryClient = useQueryClient();
 
   const isPendingStatus = (status?: string | null) => {

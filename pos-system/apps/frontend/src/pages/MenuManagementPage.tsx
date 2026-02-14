@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { menuApi, MenuCategory, AddonGroup, AddonItem, Dish, Size, Ingredient, Modifier } from '../api/menu';
+import { menuApi, MenuCategory, AddonGroup, AddonItem, Dish, Modifier } from '../api/menu';
 import { uploadApi } from '../api/upload';
 import { IngredientsManager } from '../components/menu/IngredientsManager';
 import './MenuManagementPage.css';
@@ -49,7 +49,7 @@ export const MenuManagementPage: React.FC = () => {
   const [newAddonName, setNewAddonName] = useState('');
   const [newAddonPrice, setNewAddonPrice] = useState(0);
   const [isAddingNewAddon, setIsAddingNewAddon] = useState(false);
-  const [activeSubTab, setActiveSubTab] = useState('info');
+  const [_activeSubTab, setActiveSubTab] = useState('info');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   // Usuwamy stary state - używamy teraz addonGroups z API
   const [halfHalfConfigs, setHalfHalfConfigs] = useState<HalfHalfConfig[]>(() => {
@@ -389,7 +389,7 @@ export const MenuManagementPage: React.FC = () => {
   const assignAddonGroupToCategoryMutation = useMutation({
     mutationFn: ({ categoryId, addonGroupId }: { categoryId: string; addonGroupId: string }) => 
       menuApi.assignAddonGroupToCategory(categoryId, addonGroupId),
-    onSuccess: (response) => {
+    onSuccess: (_response) => {
       queryClient.invalidateQueries({ queryKey: ['menu-categories'] });
       queryClient.invalidateQueries({ queryKey: ['addon-groups'] });
       // Odśwież dane dla wybranej kategorii
@@ -402,7 +402,7 @@ export const MenuManagementPage: React.FC = () => {
   const removeAddonGroupFromCategoryMutation = useMutation({
     mutationFn: ({ categoryId, addonGroupId }: { categoryId: string; addonGroupId: string }) => 
       menuApi.removeAddonGroupFromCategory(categoryId, addonGroupId),
-    onSuccess: (response) => {
+    onSuccess: (_response) => {
       queryClient.invalidateQueries({ queryKey: ['menu-categories'] });
       queryClient.invalidateQueries({ queryKey: ['addon-groups'] });
       // Odśwież dane dla wybranej kategorii

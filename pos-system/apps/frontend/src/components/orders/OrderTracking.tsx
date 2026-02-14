@@ -15,7 +15,7 @@ export const OrderTracking: React.FC<OrderTrackingProps> = ({
   onOrderUpdate,
   className = ''
 }) => {
-  const [currentStatus, setCurrentStatus] = useState<OrderStatus | null>(null);
+  const [_currentStatus, setCurrentStatus] = useState<OrderStatus | null>(null);
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['order-tracking', orderId],
