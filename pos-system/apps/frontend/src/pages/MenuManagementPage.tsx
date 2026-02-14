@@ -59,7 +59,7 @@ export const MenuManagementPage: React.FC = () => {
       try {
         const parsed = JSON.parse(saved);
         // Sprawdź czy konfiguracja używa starych ID - jeśli tak, zresetuj
-        if (parsed.some((config: any) => config.categoryId === 'pizza-category')) {
+        if (parsed.some((config: { categoryId?: string }) => config.categoryId === 'pizza-category')) {
           localStorage.setItem('halfHalfConfigs', JSON.stringify(MOCK_HALF_HALF_CONFIGS));
           return MOCK_HALF_HALF_CONFIGS;
         }
@@ -104,17 +104,17 @@ export const MenuManagementPage: React.FC = () => {
       // Pobierz wszystkie kategorie
       const categoriesResponse = await menuApi.getCategories();
       if (!categoriesResponse.success) return { success: false, data: [] };
-      
+
       // Pobierz pozycje z każdej kategorii równolegle
-      const itemsPromises = categoriesResponse.data.map(category => 
-        menuApi.getDishes(category.id).then(response => 
+      const itemsPromises = categoriesResponse.data.map(category =>
+        menuApi.getDishes(category.id).then(response =>
           response.success ? response.data : []
         )
       );
-      
+
       const itemsResults = await Promise.all(itemsPromises);
       const allItems = itemsResults.flat();
-      
+
       return { success: true, data: allItems };
     },
     staleTime: 30 * 1000, // Cache for 30 seconds
@@ -129,7 +129,7 @@ export const MenuManagementPage: React.FC = () => {
       const pizzaCategory = categories.find(cat => cat.name === 'Pizza');
       if (pizzaCategory && halfHalfConfigs[0].categoryId === '') {
         console.log('🔧 Auto-setting half-half config for Pizza category:', pizzaCategory.id);
-        const updatedConfigs = halfHalfConfigs.map(config => 
+        const updatedConfigs = halfHalfConfigs.map(config =>
           config.id === '1' ? { ...config, categoryId: pizzaCategory.id } : config
         );
         setHalfHalfConfigs(updatedConfigs);
@@ -143,10 +143,10 @@ export const MenuManagementPage: React.FC = () => {
     if (allMenuItems.length > 0 && halfHalfConfigs.length > 0 && halfHalfConfigs[0].categoryId !== '') {
       const pizzaCategoryId = halfHalfConfigs[0].categoryId;
       const pizzaDishes = allMenuItems.filter(item => item.categoryId === pizzaCategoryId);
-      
+
       if (pizzaDishes.length > 0 && halfHalfConfigs[0].dishes.length === 0) {
         console.log('🔧 Auto-setting half-half dishes:', pizzaDishes.map(d => d.id));
-        const updatedConfigs = halfHalfConfigs.map(config => 
+        const updatedConfigs = halfHalfConfigs.map(config =>
           config.id === '1' ? { ...config, dishes: pizzaDishes.map(d => d.id) } : config
         );
         setHalfHalfConfigs(updatedConfigs);
@@ -190,7 +190,8 @@ export const MenuManagementPage: React.FC = () => {
   });
 
   const updateCategoryMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) => menuApi.updateCategory(id, data),
+    mutationFn: ({ id, data }: { id: string; data: Record<string, unknown> }) =>
+      menuApi.updateCategory(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['menu-categories'] });
     }
@@ -206,53 +207,53 @@ export const MenuManagementPage: React.FC = () => {
 
   // Mutacje dla rozmiarów kategorii
   const addCategorySizeMutation = useMutation({
-    mutationFn: ({ categoryId, name }: { categoryId: string; name: string }) => 
+    mutationFn: ({ categoryId, name }: { categoryId: string; name: string }) =>
       menuApi.addCategorySize(categoryId, { name }),
     onSuccess: (response, variables) => {
       queryClient.invalidateQueries({ queryKey: ['menu-categories'] });
       setNewSizeName('');
-      
+
       // Aktualizuj selectedCategory z nowym rozmiarem
       if (selectedCategory && selectedCategory.id === variables.categoryId && response.success && response.data) {
         const updatedSizes = [...(selectedCategory.sizes || []), response.data];
         setSelectedCategory({
           ...selectedCategory,
-          sizes: updatedSizes
+          sizes: updatedSizes as unknown as MenuCategory['sizes']
         });
       }
     },
   });
 
   const removeCategorySizeMutation = useMutation({
-    mutationFn: ({ categoryId, sizeName }: { categoryId: string; sizeName: string }) => 
+    mutationFn: ({ categoryId, sizeName }: { categoryId: string; sizeName: string }) =>
       menuApi.removeCategorySize(categoryId, sizeName),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['menu-categories'] });
-      
+
       // Aktualizuj selectedCategory usuwając rozmiar
       if (selectedCategory && selectedCategory.id === variables.categoryId) {
-        const updatedSizes = (selectedCategory.sizes || []).filter((size: any) => {
-          const sizeName = typeof size === 'string' ? size : size.name;
+        const updatedSizes = (selectedCategory.sizes || []).filter((size) => {
+          const sizeName = typeof size === 'string' ? size : (size as { name: string }).name;
           return sizeName !== variables.sizeName;
         });
         setSelectedCategory({
           ...selectedCategory,
-          sizes: updatedSizes
+          sizes: updatedSizes as unknown as MenuCategory['sizes']
         });
       }
     },
   });
 
   const updateCategorySizeMutation = useMutation({
-    mutationFn: ({ categoryId, sizeName, newName }: { categoryId: string; sizeName: string; newName: string }) => 
+    mutationFn: ({ categoryId, sizeName, newName }: { categoryId: string; sizeName: string; newName: string }) =>
       menuApi.updateCategorySize(categoryId, sizeName, newName),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['menu-categories'] });
-      
+
       // Aktualizuj selectedCategory zmieniając nazwę rozmiaru
       if (selectedCategory && selectedCategory.id === variables.categoryId) {
-        const updatedSizes = (selectedCategory.sizes || []).map((size: any) => {
-          const currentSizeName = typeof size === 'string' ? size : size.name;
+        const updatedSizes = (selectedCategory.sizes || []).map((size) => {
+          const currentSizeName = typeof size === 'string' ? size : (size as { name: string }).name;
           if (currentSizeName === variables.sizeName) {
             return typeof size === 'string' ? variables.newName : { ...size, name: variables.newName };
           }
@@ -260,7 +261,7 @@ export const MenuManagementPage: React.FC = () => {
         });
         setSelectedCategory({
           ...selectedCategory,
-          sizes: updatedSizes
+          sizes: updatedSizes as unknown as MenuCategory['sizes']
         });
       }
     },
@@ -276,7 +277,7 @@ export const MenuManagementPage: React.FC = () => {
   });
 
   const updateMenuItemMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) => {
+    mutationFn: ({ id, data }: { id: string; data: Record<string, unknown> }) => {
       console.log('🔄 Updating menu item:', { id, data });
       return menuApi.updateDish(id, data);
     },
@@ -315,19 +316,19 @@ export const MenuManagementPage: React.FC = () => {
 
   // Mutacje dla dodatków do pozycji menu
   const assignAddonGroupMutation = useMutation({
-    mutationFn: ({ itemId, addonGroupId }: { itemId: string; addonGroupId: string }) => 
+    mutationFn: ({ itemId, addonGroupId }: { itemId: string; addonGroupId: string }) =>
       menuApi.assignAddonGroupToDish(itemId, addonGroupId),
     onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ['menu-items'] });
       queryClient.invalidateQueries({ queryKey: ['menu-categories'] });
       queryClient.invalidateQueries({ queryKey: ['addon-groups'] });
       queryClient.invalidateQueries({ queryKey: ['all-menu-items'] });
-      
+
       // Aktualizuj lokalny stan selectedDish
-      if (selectedDish && response.success && (response.data as any).group) {
+      if (selectedDish && response.success && (response.data as { group?: AddonGroup } | null)?.group) {
         setSelectedDish(prev => ({
           ...prev!,
-          addonGroups: [...(prev?.addonGroups || []), (response.data as any).group]
+          addonGroups: [...(prev?.addonGroups || []), (response.data as unknown as { group: AddonGroup }).group]
         }));
       }
     },
@@ -337,19 +338,19 @@ export const MenuManagementPage: React.FC = () => {
   });
 
   const removeAddonGroupMutation = useMutation({
-    mutationFn: ({ itemId, addonGroupId }: { itemId: string; addonGroupId: string }) => 
+    mutationFn: ({ itemId, addonGroupId }: { itemId: string; addonGroupId: string }) =>
       menuApi.removeAddonGroupFromDish(itemId, addonGroupId),
     onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ['menu-items'] });
       queryClient.invalidateQueries({ queryKey: ['menu-categories'] });
       queryClient.invalidateQueries({ queryKey: ['addon-groups'] });
       queryClient.invalidateQueries({ queryKey: ['all-menu-items'] });
-      
+
       // Aktualizuj lokalny stan selectedDish
-      if (selectedDish && response.success && (response.data as any).groupId) {
+      if (selectedDish && response.success && (response.data as { groupId?: string } | null)?.groupId) {
         setSelectedDish(prev => ({
           ...prev!,
-          addonGroups: prev?.addonGroups?.filter(group => group.id !== (response.data as any).groupId) || []
+          addonGroups: prev?.addonGroups?.filter(group => group.id !== (response.data as unknown as { groupId: string }).groupId) || []
         }));
       }
     },
@@ -387,7 +388,7 @@ export const MenuManagementPage: React.FC = () => {
 
   // Mutacje dla dodatków do kategorii
   const assignAddonGroupToCategoryMutation = useMutation({
-    mutationFn: ({ categoryId, addonGroupId }: { categoryId: string; addonGroupId: string }) => 
+    mutationFn: ({ categoryId, addonGroupId }: { categoryId: string; addonGroupId: string }) =>
       menuApi.assignAddonGroupToCategory(categoryId, addonGroupId),
     onSuccess: (_response) => {
       queryClient.invalidateQueries({ queryKey: ['menu-categories'] });
@@ -400,7 +401,7 @@ export const MenuManagementPage: React.FC = () => {
   });
 
   const removeAddonGroupFromCategoryMutation = useMutation({
-    mutationFn: ({ categoryId, addonGroupId }: { categoryId: string; addonGroupId: string }) => 
+    mutationFn: ({ categoryId, addonGroupId }: { categoryId: string; addonGroupId: string }) =>
       menuApi.removeAddonGroupFromCategory(categoryId, addonGroupId),
     onSuccess: (_response) => {
       queryClient.invalidateQueries({ queryKey: ['menu-categories'] });
@@ -422,7 +423,7 @@ export const MenuManagementPage: React.FC = () => {
   });
 
   const updateAddonGroupMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<AddonGroup> }) => 
+    mutationFn: ({ id, data }: { id: string; data: Partial<AddonGroup> }) =>
       menuApi.updateAddonGroup(id, data),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['addon-groups'] });
@@ -439,12 +440,12 @@ export const MenuManagementPage: React.FC = () => {
   });
 
   const createAddonMutation = useMutation({
-    mutationFn: ({ groupId, data }: { groupId: string; data: Partial<AddonItem> }) => 
-      menuApi.createAddonItem(groupId, data as any),
+    mutationFn: ({ groupId, data }: { groupId: string; data: Partial<AddonItem> }) =>
+      menuApi.createAddonItem(groupId, data),
     onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ['addon-groups'] });
       queryClient.invalidateQueries({ queryKey: ['menu-categories'] });
-      
+
       // Aktualizuj lokalny stan selectedAddonGroup
       if (selectedAddonGroup && response.success && response.data) {
         console.log('Adding new addon to local state:', response.data);
@@ -468,13 +469,13 @@ export const MenuManagementPage: React.FC = () => {
       console.log('Update addon success:', response);
       queryClient.invalidateQueries({ queryKey: ['addon-groups'] });
       queryClient.invalidateQueries({ queryKey: ['menu-categories'] });
-      
+
       // Aktualizuj lokalny stan selectedAddonGroup
       if (selectedAddonGroup && response.success && response.data) {
         console.log('Updating local state with:', response.data);
         setSelectedAddonGroup(prev => ({
           ...prev!,
-          addonItems: prev?.addonItems?.map(item => 
+          addonItems: prev?.addonItems?.map(item =>
             item.id === response.data.id ? response.data : item
           ) || []
         }));
@@ -486,12 +487,12 @@ export const MenuManagementPage: React.FC = () => {
   });
 
   const deleteAddonMutation = useMutation({
-    mutationFn: ({ groupId, addonId }: { groupId: string; addonId: string }) => 
+    mutationFn: ({ groupId, addonId }: { groupId: string; addonId: string }) =>
       menuApi.deleteAddonItem(groupId, addonId),
     onSuccess: (response, variables) => {
       queryClient.invalidateQueries({ queryKey: ['addon-groups'] });
       queryClient.invalidateQueries({ queryKey: ['menu-categories'] });
-      
+
       // Aktualizuj lokalny stan selectedAddonGroup
       if (selectedAddonGroup && response.success) {
         setSelectedAddonGroup(prev => ({
@@ -507,7 +508,7 @@ export const MenuManagementPage: React.FC = () => {
 
   // Mutacje dla modifiers
   const createModifierMutation = useMutation({
-    mutationFn: ({ groupId, data }: { groupId: string; data: any }) => 
+    mutationFn: ({ groupId, data }: { groupId: string; data: Record<string, unknown> }) =>
       menuApi.createModifier(groupId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['modifier'] });
@@ -515,7 +516,7 @@ export const MenuManagementPage: React.FC = () => {
   });
 
   const updateModifierMutation = useMutation({
-    mutationFn: ({ groupId, data }: { groupId: string; data: any }) => 
+    mutationFn: ({ groupId, data }: { groupId: string; data: Record<string, unknown> }) =>
       menuApi.updateModifier(groupId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['modifier'] });
@@ -523,7 +524,7 @@ export const MenuManagementPage: React.FC = () => {
   });
 
   const deleteModifierMutation = useMutation({
-    mutationFn: (groupId: string) => 
+    mutationFn: (groupId: string) =>
       menuApi.deleteModifier(groupId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['modifier'] });
@@ -540,7 +541,7 @@ export const MenuManagementPage: React.FC = () => {
   // Aktualizuj selectedAddonGroup gdy addonGroups się zmieni
   useEffect(() => {
     if (selectedAddonGroup && addonGroups.length > 0) {
-      const updatedGroup = addonGroups.find((g: any) => g.id === selectedAddonGroup.id);
+      const updatedGroup = addonGroups.find((g: AddonGroup) => g.id === selectedAddonGroup.id);
       if (updatedGroup) {
         setSelectedAddonGroup(updatedGroup);
       }
@@ -567,23 +568,28 @@ export const MenuManagementPage: React.FC = () => {
   };
 
 
-  const handleDishSelect = (item: any) => {
+  const handleDishSelect = (item: Dish) => {
     // Używaj cen bezpośrednio w złotówkach - bez konwersji
     const dishWithIngredients = {
       ...item,
       ingredients: item.ingredients || []
     };
     setSelectedDish(dishWithIngredients);
-    
+
     // Automatycznie załaduj rozmiary z kategorii TYLKO jeśli danie nie ma rozmiarów I kategoria ma rozmiary
     if (item && (!item.sizes || item.sizes.length === 0)) {
       const category = categories.find(cat => cat.id === item.categoryId);
       if (category && category.sizes && category.sizes.length > 0) {
-        const sizesWithPrices = category.sizes.map((size: any) => ({
+        const sizesWithPrices = category.sizes.map((size: string | { name: string }) => ({
           name: typeof size === 'string' ? size : size.name,
-          price: 0.00 // Domyślna cena 0.00
+          price: 0.0 // Domyślna cena 0.00
         }));
-        setSelectedDish({ ...dishWithIngredients, sizes: sizesWithPrices });
+        // Dish.sizes expects full `Size[]` from API. Here we only have name+price (UI draft),
+        // so we store it with a narrow cast to avoid leaking `any`.
+        setSelectedDish({
+          ...dishWithIngredients,
+          sizes: sizesWithPrices as unknown as Dish['sizes']
+        });
       }
     }
   };
@@ -627,21 +633,21 @@ export const MenuManagementPage: React.FC = () => {
 
     try {
       setSaveStatus('saving');
-      
+
       // Upload file
       const uploadResult = await uploadApi.uploadImage(file);
-      
+
       if (uploadResult.success && uploadResult.data) {
         // Update dish with new image URL
         const imageUrl = uploadResult.data.path;
         setSelectedDish({...selectedDish, imageUrl});
-        
+
         // Save to database
-        await updateMenuItemMutation.mutateAsync({ 
-          id: selectedDish.id, 
-          data: { imageUrl } 
+        await updateMenuItemMutation.mutateAsync({
+          id: selectedDish.id,
+          data: { imageUrl }
         });
-        
+
         setSaveStatus('saved');
       } else {
         throw new Error(uploadResult.error || 'Upload failed');
@@ -709,10 +715,10 @@ export const MenuManagementPage: React.FC = () => {
   };
 
   const handleAddMenuItem = (categoryId: string) => {
-    createMenuItemMutation.mutate({ 
-      name: 'Nowa pozycja', 
-      price: 10.00, 
-      categoryId 
+    createMenuItemMutation.mutate({
+      name: 'Nowa pozycja',
+      price: 10.00,
+      categoryId
     });
   };
 
@@ -726,18 +732,18 @@ export const MenuManagementPage: React.FC = () => {
 
   const handleAssignAddonGroup = (addonGroupId: string) => {
     if (selectedDish) {
-      assignAddonGroupMutation.mutate({ 
-        itemId: selectedDish.id, 
-        addonGroupId 
+      assignAddonGroupMutation.mutate({
+        itemId: selectedDish.id,
+        addonGroupId
       });
     }
   };
 
   const handleRemoveAddonGroup = (addonGroupId: string) => {
     if (selectedDish) {
-      removeAddonGroupMutation.mutate({ 
-        itemId: selectedDish.id, 
-        addonGroupId 
+      removeAddonGroupMutation.mutate({
+        itemId: selectedDish.id,
+        addonGroupId
       });
     }
   };
@@ -745,18 +751,18 @@ export const MenuManagementPage: React.FC = () => {
   // Funkcje obsługi dla kategorii
   const handleAssignAddonGroupToCategory = (addonGroupId: string) => {
     if (selectedCategory) {
-      assignAddonGroupToCategoryMutation.mutate({ 
-        categoryId: selectedCategory.id, 
-        addonGroupId 
+      assignAddonGroupToCategoryMutation.mutate({
+        categoryId: selectedCategory.id,
+        addonGroupId
       });
     }
   };
 
   const handleRemoveAddonGroupFromCategory = (addonGroupId: string) => {
     if (selectedCategory) {
-      removeAddonGroupFromCategoryMutation.mutate({ 
-        categoryId: selectedCategory.id, 
-        addonGroupId 
+      removeAddonGroupFromCategoryMutation.mutate({
+        categoryId: selectedCategory.id,
+        addonGroupId
       });
     }
   };
@@ -836,7 +842,7 @@ export const MenuManagementPage: React.FC = () => {
   const handleDeleteAddonGroup = () => {
     // Use selectedAddonGroup for addons tab, selectedModifierGroup for modifiers tab
     const groupToUse = activeTab === 'modifiers' ? selectedModifierGroup : selectedAddonGroup;
-    
+
     if (groupToUse) {
       deleteAddonGroupMutation.mutate(groupToUse.id);
     }
@@ -847,7 +853,7 @@ export const MenuManagementPage: React.FC = () => {
     console.log('Group addonItems:', group.addonItems);
     console.log('Setting selectedAddonGroup to:', group);
     setSelectedAddonGroup(group);
-    
+
     // Force re-render by updating state
     setTimeout(() => {
       console.log('Current selectedAddonGroup after timeout:', selectedAddonGroup);
@@ -881,24 +887,24 @@ export const MenuManagementPage: React.FC = () => {
   const handleSaveHalfHalfConfig = () => {
     if (selectedHalfHalfConfig) {
       console.log('💾 Saving half-half config:', selectedHalfHalfConfig);
-      
+
       // Zapisz konfigurację do localStorage
-      const updatedConfigs = halfHalfConfigs.map(config => 
+      const updatedConfigs = halfHalfConfigs.map(config =>
         config.id === selectedHalfHalfConfig.id ? selectedHalfHalfConfig : config
       );
       setHalfHalfConfigs(updatedConfigs);
-      
+
       // Zapisz do localStorage
       localStorage.setItem('halfHalfConfigs', JSON.stringify(updatedConfigs));
-      
+
       // Wyślij event do innych komponentów
-      window.dispatchEvent(new CustomEvent('halfHalfConfigsUpdated', { 
-        detail: updatedConfigs 
+      window.dispatchEvent(new CustomEvent('halfHalfConfigsUpdated', {
+        detail: updatedConfigs
       }));
-      
+
       // Pokaż komunikat o zapisaniu
       alert('Konfiguracja pół na pół została zapisana!');
-      
+
       console.log('✅ Half-half config saved successfully');
     }
   };
@@ -915,7 +921,7 @@ export const MenuManagementPage: React.FC = () => {
         <h3>Kategorie</h3>
         <span className="category-count">{categories.length}</span>
       </div>
-      
+
       <button className="add-category-btn" onClick={handleAddCategory}>
         + Dodaj nową kategorię
       </button>
@@ -965,12 +971,12 @@ export const MenuManagementPage: React.FC = () => {
               className="form-select"
               value={selectedCategory?.id || ''}
               onChange={(e) => {
-                const cat = categories.find((c: any) => c.id === e.target.value) || null;
+                const cat = categories.find((c: MenuCategory) => c.id === e.target.value) || null;
                 setSelectedCategory(cat);
               }}
             >
               <option value="">Wybierz kategorię...</option>
-              {categories.map((cat: any) => (
+              {categories.map((cat: MenuCategory) => (
                 <option key={cat.id} value={cat.id}>{cat.name}</option>
               ))}
             </select>
@@ -986,8 +992,8 @@ export const MenuManagementPage: React.FC = () => {
                 <div className="dish-drag">☰</div>
                 {item.imageUrl && (
                   <div className="dish-image">
-                    <img 
-                      src={item.imageUrl} 
+                    <img
+                      src={item.imageUrl}
                       alt={item.name}
                       onError={(e) => {
                         e.currentTarget.style.display = 'none';
@@ -1003,8 +1009,8 @@ export const MenuManagementPage: React.FC = () => {
             ))}
           </div>
 
-          <button 
-            className="add-dish-btn" 
+          <button
+            className="add-dish-btn"
             onClick={() => selectedCategory && handleAddMenuItem(selectedCategory.id)}
             disabled={!selectedCategory}
           >
@@ -1021,7 +1027,7 @@ export const MenuManagementPage: React.FC = () => {
         <h3>Konfiguracje pół na pół</h3>
         <span className="category-count">{halfHalfConfigs.length}</span>
       </div>
-      
+
       <button className="add-halfhalf-config-btn" onClick={handleAddHalfHalfConfig}>
         + Dodaj nową konfigurację
       </button>
@@ -1059,7 +1065,7 @@ export const MenuManagementPage: React.FC = () => {
           + Dodaj nową grupę
         </button>
       </div>
-      
+
       {/* Sekcja pomocy */}
       <div className="help-section">
         <h4>📖 Jak używać systemu modyfikatorów:</h4>
@@ -1080,7 +1086,7 @@ export const MenuManagementPage: React.FC = () => {
       </div>
 
       <div className="modifier-groups-list">
-        {addonGroups.map((group: any) => (
+        {addonGroups.map((group: AddonGroup) => (
           <div
             key={group.id}
             className={`modifier-group-item ${selectedModifierGroup?.id === group.id ? 'selected' : ''}`}
@@ -1090,7 +1096,7 @@ export const MenuManagementPage: React.FC = () => {
             <div className="group-info">
               <div className="group-name">{group.name}</div>
               <div className="group-details">
-{group.modifier ? 'Modyfikator' : 'Brak modyfikatora'}
+{selectedModifierGroup?.id === group.id && modifier ? 'Modyfikator' : 'Brak modyfikatora'}
               </div>
             </div>
             <span className="special-icon">⚙️</span>
@@ -1113,7 +1119,7 @@ export const MenuManagementPage: React.FC = () => {
           + Dodaj nową grupę
         </button>
       </div>
-      
+
       {/* Sekcja pomocy */}
       <div className="help-section">
         <h4>📖 Jak używać systemu dodatków:</h4>
@@ -1134,7 +1140,7 @@ export const MenuManagementPage: React.FC = () => {
       </div>
 
       <div className="addon-groups-list">
-        {addonGroups.map((group: any) => (
+        {addonGroups.map((group: AddonGroup) => (
           <div
             key={group.id}
             className={`addon-group-item ${selectedAddonGroup?.id === group.id ? 'selected' : ''}`}
@@ -1144,7 +1150,7 @@ export const MenuManagementPage: React.FC = () => {
             <div className="group-info">
               <div className="group-name">{group.name}</div>
               <div className="group-details">
-                {group.addonItems?.length || 0} dodatków • {group.sizes?.map((size: any) => `[${typeof size === 'string' ? size : size.name}]`).join(', ') || 'Brak rozmiarów'}
+                {group.addonItems?.length || 0} dodatków • {(group as { sizes?: Array<string | { name: string }> }).sizes?.map((size) => `[${typeof size === 'string' ? size : size.name}]`).join(', ') || 'Brak rozmiarów'}
               </div>
             </div>
             <span className="special-icon">🔥</span>
@@ -1161,7 +1167,7 @@ export const MenuManagementPage: React.FC = () => {
   const renderDishEditPanel = () => {
     const currentDish = selectedDish;
     if (!currentDish) return null;
-    
+
     return (
     <div className="edit-panel">
       <div className="panel-header">
@@ -1173,11 +1179,11 @@ export const MenuManagementPage: React.FC = () => {
             {saveStatus === 'error' && <span className="status-error">❌ Błąd zapisu</span>}
           </div>
           <button className="cancel-btn">ANULUJ</button>
-          <button 
-            className="save-btn" 
-            onClick={() => currentDish && updateMenuItemMutation.mutate({ 
-              id: currentDish.id, 
-              data: { name: currentDish.name } 
+          <button
+            className="save-btn"
+            onClick={() => currentDish && updateMenuItemMutation.mutate({
+              id: currentDish.id,
+              data: { name: currentDish.name }
             })}
             disabled={updateMenuItemMutation.isPending}
           >
@@ -1203,9 +1209,9 @@ export const MenuManagementPage: React.FC = () => {
               // Automatycznie zapisz zmiany w nazwie po opuszczeniu pola
               if (currentDish && currentDish.name.trim()) {
                 setSaveStatus('saving');
-                updateMenuItemMutation.mutate({ 
-                  id: currentDish.id, 
-                  data: { name: currentDish.name.trim() } 
+                updateMenuItemMutation.mutate({
+                  id: currentDish.id,
+                  data: { name: currentDish.name.trim() }
                 });
               }
             }}
@@ -1226,14 +1232,14 @@ export const MenuManagementPage: React.FC = () => {
               // Automatycznie zapisz zmianę kategorii po opuszczeniu pola
               if (currentDish && currentDish.categoryId) {
                 setSaveStatus('saving');
-                updateMenuItemMutation.mutate({ 
-                  id: currentDish.id, 
-                  data: { categoryId: currentDish.categoryId } 
+                updateMenuItemMutation.mutate({
+                  id: currentDish.id,
+                  data: { categoryId: currentDish.categoryId }
                 });
               }
             }}
           >
-            {categories.map((cat: any) => (
+            {categories.map((cat: MenuCategory) => (
               <option key={cat.id} value={cat.id}>{cat.name}</option>
             ))}
           </select>
@@ -1259,11 +1265,11 @@ export const MenuManagementPage: React.FC = () => {
                   </div>
                 </label>
               </div>
-              
+
               <div className="upload-divider">
                 <span>lub</span>
               </div>
-              
+
               <div className="url-input-area">
                 <input
                   type="url"
@@ -1276,9 +1282,9 @@ export const MenuManagementPage: React.FC = () => {
                     // Automatycznie zapisz zmianę URL zdjęcia po opuszczeniu pola
                     if (currentDish) {
                       setSaveStatus('saving');
-                      updateMenuItemMutation.mutate({ 
-                        id: currentDish.id, 
-                        data: { imageUrl: currentDish.imageUrl || null } 
+                      updateMenuItemMutation.mutate({
+                        id: currentDish.id,
+                        data: { imageUrl: currentDish.imageUrl || null }
                       });
                     }
                   }}
@@ -1287,24 +1293,24 @@ export const MenuManagementPage: React.FC = () => {
                 />
               </div>
             </div>
-            
+
             {currentDish.imageUrl && (
               <div className="image-preview">
-                <img 
-                  src={currentDish.imageUrl} 
+                <img
+                  src={currentDish.imageUrl}
                   alt={currentDish.name}
                   onError={(e) => {
                     e.currentTarget.style.display = 'none';
                   }}
                 />
-                <button 
+                <button
                   type="button"
                   className="remove-image-btn"
                   onClick={() => {
                     setSelectedDish({...currentDish, imageUrl: ''});
-                    updateMenuItemMutation.mutate({ 
-                      id: currentDish.id, 
-                      data: { imageUrl: null } 
+                    updateMenuItemMutation.mutate({
+                      id: currentDish.id,
+                      data: { imageUrl: null }
                     });
                   }}
                   title="Usuń zdjęcie"
@@ -1319,7 +1325,7 @@ export const MenuManagementPage: React.FC = () => {
         <div className="form-group">
           <label>Rozmiary i ceny</label>
           <div className="sizes-list">
-            {currentDish.sizes?.map((size: any, index: any) => (
+            {currentDish.sizes?.map((size, index) => (
               <div key={index} className="size-item">
                 <span className="size-name">{size.name}</span>
                 <input
@@ -1352,7 +1358,7 @@ export const MenuManagementPage: React.FC = () => {
             )) || <div className="no-sizes">Brak rozmiarów - dodaj rozmiary w kategorii</div>}
           </div>
           {currentDish.sizes && currentDish.sizes.length > 0 && (
-            <button 
+            <button
               className="save-sizes-btn"
               onClick={() => currentDish && updateMenuItemSizesMutation.mutate({
                 itemId: currentDish.id,
@@ -1375,10 +1381,10 @@ export const MenuManagementPage: React.FC = () => {
               <h4>Przypisane grupy dodatków:</h4>
               {selectedDish?.addonGroups && selectedDish.addonGroups.length > 0 ? (
                 <div className="assigned-list">
-                  {selectedDish.addonGroups.map((addonGroup: any) => (
+                  {selectedDish.addonGroups.map((addonGroup: AddonGroup) => (
                       <div key={addonGroup.id} className="assigned-item">
                         <span>{addonGroup.name}</span>
-                        <button 
+                        <button
                           className="remove-btn"
                           onClick={() => handleRemoveAddonGroup(addonGroup.id)}
                           disabled={removeAddonGroupMutation.isPending}
@@ -1393,20 +1399,20 @@ export const MenuManagementPage: React.FC = () => {
                 <p className="no-addons">Brak przypisanych dodatków</p>
               )}
             </div>
-            
+
             <div className="available-addons">
               <h4>Dostępne grupy dodatków:</h4>
               {addonGroups.length > 0 ? (
                 <div className="available-list">
                   {addonGroups
-                    .filter((group: any) => {
-                      const isAssigned = selectedDish?.addonGroups?.some((ag: any) => ag.id === group.id);
+                    .filter((group: AddonGroup) => {
+                      const isAssigned = selectedDish?.addonGroups?.some((ag: AddonGroup) => ag.id === group.id);
                       return !isAssigned;
                     })
-                    .map((addonGroup: any) => (
+                    .map((addonGroup: AddonGroup) => (
                       <div key={addonGroup.id} className="available-item">
                         <span>{addonGroup.name}</span>
-                        <button 
+                        <button
                           className="assign-btn"
                           onClick={() => handleAssignAddonGroup(addonGroup.id)}
                           disabled={assignAddonGroupMutation.isPending}
@@ -1426,7 +1432,7 @@ export const MenuManagementPage: React.FC = () => {
 
         <div className="form-group">
           <label>Składniki</label>
-          <IngredientsManager 
+          <IngredientsManager
             itemId={currentDish.id}
             ingredients={currentDish.ingredients || []}
             onIngredientsChange={(ingredients) => {
@@ -1445,11 +1451,11 @@ export const MenuManagementPage: React.FC = () => {
         <h2>Grupa dodatków: {selectedAddonGroup?.name}</h2>
         <div className="panel-actions">
           <button className="cancel-btn">ANULUJ</button>
-          <button 
-            className="save-btn" 
-            onClick={() => selectedAddonGroup && updateAddonGroupMutation.mutate({ 
-              id: selectedAddonGroup.id, 
-              data: { name: selectedAddonGroup.name } 
+          <button
+            className="save-btn"
+            onClick={() => selectedAddonGroup && updateAddonGroupMutation.mutate({
+              id: selectedAddonGroup.id,
+              data: { name: selectedAddonGroup.name }
             })}
             disabled={updateAddonGroupMutation.isPending}
           >
@@ -1475,7 +1481,7 @@ export const MenuManagementPage: React.FC = () => {
               className="form-input"
             />
           </div>
-          
+
           {/* Debug info */}
           <div style={{ background: '#f0f0f0', padding: '10px', margin: '10px 0', fontSize: '12px' }}>
             <strong>Debug Info:</strong><br/>
@@ -1502,23 +1508,23 @@ export const MenuManagementPage: React.FC = () => {
           <div className="form-group">
             <label>Dodatki w grupie</label>
             <div className="addon-items-list">
-              {selectedAddonGroup.addonItems && selectedAddonGroup.addonItems.length > 0 ? selectedAddonGroup.addonItems.map((item: any) => (
+              {selectedAddonGroup.addonItems && selectedAddonGroup.addonItems.length > 0 ? selectedAddonGroup.addonItems.map((item: AddonItem) => (
                 <div key={item.id} className="addon-item">
                   <input
                     type="text"
                     value={item.name}
                     onChange={(e) => {
                       console.log('Changing addon name:', e.target.value);
-                      const updatedItems = selectedAddonGroup.addonItems?.map((i: any) => 
-                        i.id === item.id ? {...i, name: e.target.value} : i
+                      const updatedItems = selectedAddonGroup.addonItems?.map((i: AddonItem) =>
+                        i.id === item.id ? { ...i, name: e.target.value } : i
                       );
                       console.log('Updated items:', updatedItems);
                       setSelectedAddonGroup({...selectedAddonGroup, addonItems: updatedItems});
                     }}
                     className="addon-name-input"
                     placeholder="Nazwa dodatku"
-                    style={{ 
-                      backgroundColor: 'white', 
+                    style={{
+                      backgroundColor: 'white',
                       border: '2px solid #007bff',
                       pointerEvents: 'auto',
                       cursor: 'text'
@@ -1533,16 +1539,16 @@ export const MenuManagementPage: React.FC = () => {
                     onChange={(e) => {
                       console.log('Changing addon price:', e.target.value);
                       const price = parseFloat(e.target.value) || 0;
-                      const updatedItems = selectedAddonGroup.addonItems?.map((i: any) => 
-                        i.id === item.id ? {...i, price: price} : i
+                      const updatedItems = selectedAddonGroup.addonItems?.map((i: AddonItem) =>
+                        i.id === item.id ? { ...i, price } : i
                       );
                       console.log('Updated items with price:', updatedItems);
                       setSelectedAddonGroup({...selectedAddonGroup, addonItems: updatedItems});
                     }}
                     className="addon-price-input"
                     placeholder="0.00"
-                    style={{ 
-                      backgroundColor: 'white', 
+                    style={{
+                      backgroundColor: 'white',
                       border: '2px solid #007bff',
                       pointerEvents: 'auto',
                       cursor: 'text'
@@ -1551,10 +1557,10 @@ export const MenuManagementPage: React.FC = () => {
                     disabled={false}
                   />
                   <span className="currency">zł</span>
-                  <button 
+                  <button
                     className="save-addon-btn"
                     onClick={() => {
-                      const currentItem = selectedAddonGroup.addonItems?.find((i: any) => i.id === item.id);
+                      const currentItem = selectedAddonGroup.addonItems?.find((i: AddonItem) => i.id === item.id);
                       if (currentItem) {
                         updateAddonMutation.mutate({
                           groupId: selectedAddonGroup.id,
@@ -1568,7 +1574,7 @@ export const MenuManagementPage: React.FC = () => {
                   >
                     {updateAddonMutation.isPending ? '...' : '💾'}
                   </button>
-                  <button 
+                  <button
                     className="delete-addon-btn"
                     onClick={() => handleDeleteAddon(item.id)}
                     title="Usuń dodatek"
@@ -1579,7 +1585,7 @@ export const MenuManagementPage: React.FC = () => {
               )) : <div className="no-addons">Brak dodatków w grupie</div>}
             </div>
             {!isAddingNewAddon ? (
-              <button 
+              <button
                 className="add-addon-btn"
                 onClick={handleAddAddon}
               >
@@ -1613,14 +1619,14 @@ export const MenuManagementPage: React.FC = () => {
                   </div>
                 </div>
                 <div className="form-actions">
-                  <button 
+                  <button
                     className="save-btn"
                     onClick={handleSaveNewAddon}
                     disabled={!newAddonName.trim()}
                   >
                     💾 ZAPISZ
                   </button>
-                  <button 
+                  <button
                     className="cancel-btn"
                     onClick={handleCancelNewAddon}
                   >
@@ -1641,11 +1647,11 @@ export const MenuManagementPage: React.FC = () => {
         <h2>Grupa modyfikatorów: {selectedModifierGroup?.name}</h2>
         <div className="panel-actions">
           <button className="cancel-btn">ANULUJ</button>
-          <button 
-            className="save-btn" 
-            onClick={() => selectedModifierGroup && updateAddonGroupMutation.mutate({ 
-              id: selectedModifierGroup.id, 
-              data: { name: selectedModifierGroup.name } 
+          <button
+            className="save-btn"
+            onClick={() => selectedModifierGroup && updateAddonGroupMutation.mutate({
+              id: selectedModifierGroup.id,
+              data: { name: selectedModifierGroup.name }
             })}
             disabled={updateAddonGroupMutation.isPending}
           >
@@ -1750,7 +1756,7 @@ export const MenuManagementPage: React.FC = () => {
                     />
                   </div>
                 </div>
-                <button 
+                <button
                   className="save-modifier-btn"
                   onClick={() => selectedModifierGroup && updateModifierMutation.mutate({
                     groupId: selectedModifierGroup.id,
@@ -1765,7 +1771,7 @@ export const MenuManagementPage: React.FC = () => {
                 >
                   {updateModifierMutation.isPending ? 'ZAPISYWANIE...' : 'ZAPISZ MODYFIKATOR'}
                 </button>
-                <button 
+                <button
                   className="delete-modifier-btn"
                   onClick={() => selectedModifierGroup && deleteModifierMutation.mutate(selectedModifierGroup.id)}
                   disabled={deleteModifierMutation.isPending}
@@ -1776,7 +1782,7 @@ export const MenuManagementPage: React.FC = () => {
             ) : (
               <div className="no-modifier">
                 <p>Brak modyfikatora dla tej grupy</p>
-                <button 
+                <button
                   className="add-modifier-btn"
                   onClick={handleAddModifier}
                   disabled={createModifierMutation.isPending}
@@ -1794,11 +1800,11 @@ export const MenuManagementPage: React.FC = () => {
 
   const renderHalfHalfEditPanel = () => {
     if (!selectedHalfHalfConfig) return null;
-    
+
     const selectedCategory = categories.find(cat => cat.id === selectedHalfHalfConfig.categoryId);
     const availableDishes = allMenuItems.filter(item => item.categoryId === selectedHalfHalfConfig.categoryId);
     const availableSizes = selectedCategory?.sizes || [];
-    
+
     // Debugowanie
     console.log('🔧 Half-Half Edit Panel Debug:');
     console.log('selectedHalfHalfConfig:', selectedHalfHalfConfig);
@@ -1806,7 +1812,7 @@ export const MenuManagementPage: React.FC = () => {
     console.log('allMenuItems length:', allMenuItems.length);
     console.log('availableDishes length:', availableDishes.length);
     console.log('availableSizes length:', availableSizes.length);
-    
+
     const handleCategorySelect = (categoryId: string) => {
       setSelectedHalfHalfConfig({
         ...selectedHalfHalfConfig,
@@ -1815,14 +1821,14 @@ export const MenuManagementPage: React.FC = () => {
         sizes: [] // Reset sizes when category changes
       });
     };
-    
+
     const handleDishToggle = (dishId: string) => {
       console.log('🍽️ Toggling dish:', dishId);
       console.log('Current dishes:', selectedHalfHalfConfig.dishes);
-      
+
       const isSelected = selectedHalfHalfConfig.dishes.includes(dishId);
       console.log('Is selected:', isSelected);
-      
+
       if (isSelected) {
         const newDishes = selectedHalfHalfConfig.dishes.filter(id => id !== dishId);
         console.log('Removing dish, new dishes:', newDishes);
@@ -1839,7 +1845,7 @@ export const MenuManagementPage: React.FC = () => {
         });
       }
     };
-    
+
     const handleSizeToggle = (sizeId: string) => {
       const isSelected = selectedHalfHalfConfig.sizes.includes(sizeId);
       if (isSelected) {
@@ -1854,7 +1860,7 @@ export const MenuManagementPage: React.FC = () => {
         });
       }
     };
-    
+
     const handleSelectAllDishes = () => {
       if (selectedHalfHalfConfig.dishes.length === availableDishes.length) {
         // Deselect all
@@ -1870,15 +1876,15 @@ export const MenuManagementPage: React.FC = () => {
         });
       }
     };
-    
+
     return (
       <div className="edit-panel">
         <div className="panel-header">
           <h2>Konfiguracja: {selectedHalfHalfConfig.name}</h2>
           <div className="panel-actions">
             <button className="cancel-btn">ANULUJ</button>
-            <button 
-              className="save-btn" 
+            <button
+              className="save-btn"
               onClick={handleSaveHalfHalfConfig}
             >
               ZAPISZ
@@ -2016,18 +2022,18 @@ export const MenuManagementPage: React.FC = () => {
   const renderCategoryEditPanel = () => {
     const currentCategory = selectedCategory;
     if (!currentCategory) return null;
-    
+
     return (
     <div className="edit-panel">
       <div className="panel-header">
         <h2>Edycja kategorii</h2>
         <div className="panel-actions">
           <button className="cancel-btn">ANULUJ</button>
-          <button 
-            className="save-btn" 
-            onClick={() => currentCategory && updateCategoryMutation.mutate({ 
-              id: currentCategory.id, 
-              data: { name: currentCategory.name } 
+          <button
+            className="save-btn"
+            onClick={() => currentCategory && updateCategoryMutation.mutate({
+              id: currentCategory.id,
+              data: { name: currentCategory.name }
             })}
             disabled={updateCategoryMutation.isPending}
           >
@@ -2083,10 +2089,10 @@ export const MenuManagementPage: React.FC = () => {
         <div className="form-group">
           <label>Rozmiary kategorii</label>
           <div className="sizes-list">
-            {currentCategory.sizes?.map((size: any, index: any) => {
+            {currentCategory.sizes?.map((size, index) => {
               const sizeName = typeof size === 'string' ? size : size.name;
               const isEditing = editingSize === sizeName;
-              
+
               return (
                 <div key={index} className="size-item">
                   {isEditing ? (
@@ -2152,8 +2158,8 @@ export const MenuManagementPage: React.FC = () => {
               onChange={(e) => setNewSizeName(e.target.value)}
               className="size-input"
             />
-            <button 
-              className="add-size-btn" 
+            <button
+              className="add-size-btn"
               onClick={handleAddCategorySize}
               disabled={!newSizeName.trim()}
             >
@@ -2195,10 +2201,10 @@ export const MenuManagementPage: React.FC = () => {
               <h4>Przypisane grupy dodatków:</h4>
               {selectedCategory?.addonGroups && selectedCategory.addonGroups.length > 0 ? (
                 <div className="assigned-list">
-                  {selectedCategory.addonGroups.map((addonGroup: any) => (
+                  {selectedCategory.addonGroups.map((addonGroup: AddonGroup) => (
                       <div key={addonGroup.id} className="assigned-item">
                         <span>{addonGroup.name}</span>
-                        <button 
+                        <button
                           className="remove-btn"
                           onClick={() => handleRemoveAddonGroupFromCategory(addonGroup.id)}
                           disabled={removeAddonGroupFromCategoryMutation.isPending}
@@ -2213,20 +2219,20 @@ export const MenuManagementPage: React.FC = () => {
                 <p className="no-addons">Brak przypisanych dodatków</p>
               )}
             </div>
-            
+
             <div className="available-addons">
               <h4>Dostępne grupy dodatków:</h4>
               {addonGroups.length > 0 ? (
                 <div className="available-list">
                   {addonGroups
-                    .filter((group: any) => {
-                      const isAssigned = selectedCategory?.addonGroups?.some((ag: any) => ag.id === group.id);
+                    .filter((group: AddonGroup) => {
+                      const isAssigned = selectedCategory?.addonGroups?.some((ag: AddonGroup) => ag.id === group.id);
                       return !isAssigned;
                     })
-                    .map((addonGroup: any) => (
+                    .map((addonGroup: AddonGroup) => (
                       <div key={addonGroup.id} className="available-item">
                         <span>{addonGroup.name}</span>
-                        <button 
+                        <button
                           className="assign-btn"
                           onClick={() => handleAssignAddonGroupToCategory(addonGroup.id)}
                           disabled={assignAddonGroupToCategoryMutation.isPending}
