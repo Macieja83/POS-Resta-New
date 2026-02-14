@@ -52,6 +52,7 @@ export const verifyToken = (req: Request, res: Response, next: NextFunction) => 
     next();
   } catch (error) {
     console.error('❌ Token verification failed:', error);
+    void error;
     return res.status(401).json({ success: false, error: 'Nieprawidłowy token' });
   }
 };

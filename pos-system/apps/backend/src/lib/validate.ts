@@ -202,7 +202,7 @@ export function validateInput<T>(schema: z.ZodSchema<T>, data: unknown): T {
       field: err.path.join('.'),
       message: err.message,
       code: err.code,
-      received: (err as any).received
+      received: (err as unknown as { received?: unknown }).received
     }));
     
     console.error('❌ Validation failed:', errors);
