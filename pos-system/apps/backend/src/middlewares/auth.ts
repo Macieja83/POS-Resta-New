@@ -73,7 +73,7 @@ export const verifyTokenOptional = (req: Request, res: Response, next: NextFunct
     console.log('✅ Optional token verified for user:', { id: decoded.id, email: decoded.email, role: decoded.role });
     req.user = decoded;
     next();
-  } catch (error) {
+  } catch {
     console.log('ℹ️ Token verification failed (optional auth), continuing without user');
     req.user = undefined;
     next();

@@ -44,7 +44,21 @@ export interface OrdersFilters {
 }
 
 export type OrdersFiltersInput = OrdersFilters;
-export type CreateOrderInput = any; // Will be defined by Prisma
+export type CreateOrderInput = {
+  type?: OrderType | string;
+  status?: OrderStatus | string;
+  tableNumber?: string;
+  promisedTime?: number;
+  paymentMethod?: PaymentMethod;
+  notes?: string;
+  customer?: {
+    name?: string;
+    phone?: string;
+    email?: string;
+    address?: unknown;
+  };
+  items?: Array<{ name?: string; price?: number; quantity?: number }>;
+} & Record<string, unknown>;
 export type UpdateOrderStatusInput = {
   status?: OrderStatus;
   paymentMethod?: PaymentMethod;
