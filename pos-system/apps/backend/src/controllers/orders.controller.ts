@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from 'express';
 import { createOrderSchema, ordersFiltersSchema, updateOrderSchema, updateOrderStatusSchema, validateInput } from '../lib/validate';
 import { OrdersService } from '../services/orders.service';
 import {
+    OrderStatus,
     OrderSummaryFilters,
     OrdersFiltersInput,
     OrderType,
@@ -9,7 +10,7 @@ import {
 } from '../types/local';
 
 // Local types for controller
-type CreateOrderRequest = any; // Will be defined by Prisma
+type CreateOrderRequest = Record<string, unknown>; // TODO: tighten based on schema/Prisma
 type AssignEmployeeRequest = {
   employeeId: string;
 };
@@ -180,16 +181,16 @@ export class OrdersController {
       const filters = {
         limit: Number(limit),
         page: Number(page),
-        status: ['OPEN', 'PENDING', 'READY'] as any,
-        type: 'DELIVERY' as any,
-        assignedEmployeeId: null as any // Only unassigned orders
+        status: [OrderStatus.OPEN, OrderStatus.PENDING, OrderStatus.READY],
+        type: OrderType.DELIVERY,
+        assignedEmployeeId: null // Only unassigned orders
       };
 
       console.log('📦 Fetching orders with filters:', filters);
       const orders = await this.ordersService.getOrders(filters);
       
       console.log('📦 Found orders:', orders.orders.length, 'out of', orders.total);
-      console.log('📦 Order IDs:', orders.orders.map((o: any) => o.id).slice(0, 5));
+      console.log('📦 Order IDs:', orders.orders.map((o) => o.id).slice(0, 5));
       
       const response = {
         success: true,
@@ -221,13 +222,13 @@ export class OrdersController {
   async getMyOrders(req: Request, res: Response, next: NextFunction) {
     try {
       const { limit = 20, page = 1 } = req.query;
-      const employeeId = (req as any).user?.id; // Assuming auth middleware sets req.user
+      const employeeId = req.user?.id; // set by auth middleware
       
       console.log('🔵 [getMyOrders] Request received:', {
         employeeId,
         limit,
         page,
-        hasUser: !!(req as any).user
+        hasUser: !!req.user
       });
       
       if (!employeeId) {
@@ -270,14 +271,14 @@ export class OrdersController {
   async claimOrder(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const employeeId = (req as any).user?.id; // Assuming auth middleware sets req.user
-      const employeeRole = (req as any).user?.role;
+      const employeeId = req.user?.id; // set by auth middleware
+      const employeeRole = req.user?.role;
       
       console.log('🔵 [claimOrder] Request received:', {
         orderId: id,
         employeeId,
         employeeRole,
-        hasUser: !!(req as any).user
+        hasUser: !!req.user
       });
       
       if (!employeeId) {
@@ -296,14 +297,14 @@ export class OrdersController {
         success: true,
         data: order
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ [claimOrder] Error:', {
-        message: error?.message,
-        stack: error?.stack,
-        name: error?.name
+        message: error instanceof Error ? error.message : undefined,
+        stack: error instanceof Error ? error.stack : undefined,
+        name: error instanceof Error ? error.name : undefined
       });
       // Return more detailed error message
-      if (error?.message) {
+      if (error instanceof Error && error.message) {
         return res.status(400).json({
           success: false,
           error: error.message
@@ -316,7 +317,7 @@ export class OrdersController {
   async updateOrderStatus(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const user = (req as any).user; // Get user from auth middleware (optional)
+      const user = req.user; // Get user from auth middleware (optional)
       console.log('🔄 updateOrderStatus called:', { 
         id, 
         body: req.body, 
@@ -348,7 +349,7 @@ export class OrdersController {
         if (completedStatuses.includes(statusData.status)) {
           statusData.completedBy = {
             id: user.id,
-            name: user.name || '',
+            name: '',
             role: user.role || 'DRIVER'
           };
         }
@@ -361,7 +362,7 @@ export class OrdersController {
         orderId: id,
         finalStatus: order.status,
         finalPaymentMethod: order.paymentMethod,
-        completedById: (order as any).completedById
+        completedById: (order as unknown as { completedById?: unknown }).completedById
       });
       
       res.json({
@@ -562,20 +563,23 @@ export class OrdersController {
           phone: '',
           email: ''
         },
-        items: shopOrder.items.map((item: any) => ({
-          name: item.name,
-          quantity: item.quantity,
-          price: item.price,
-          addons: item.addons || [],
-          ingredients: item.ingredients || [],
-          addedIngredients: item.addedIngredients || [],
-          removedIngredients: item.removedIngredients || [],
-          isHalfHalf: item.isHalfHalf || false,
-          selectedSize: item.selectedSize || null,
-          leftHalf: item.leftHalf || null,
-          rightHalf: item.rightHalf || null,
-          notes: item.notes || null
-        })),
+        items: shopOrder.items.map((item: unknown) => {
+          const typed = item as Record<string, unknown>;
+          return {
+          name: String(typed.name ?? ''),
+          quantity: Number(typed.quantity ?? 1),
+          price: Number(typed.price ?? 0),
+          addons: (typed.addons as unknown[]) || [],
+          ingredients: (typed.ingredients as unknown[]) || [],
+          addedIngredients: (typed.addedIngredients as unknown[]) || [],
+          removedIngredients: (typed.removedIngredients as unknown[]) || [],
+          isHalfHalf: Boolean(typed.isHalfHalf),
+          selectedSize: (typed.selectedSize as unknown) || null,
+          leftHalf: (typed.leftHalf as unknown) || null,
+          rightHalf: (typed.rightHalf as unknown) || null,
+          notes: (typed.notes as unknown as string | null) ?? null
+        };
+        }),
         notes: shopOrder.notes || null,
         tableNumber: shopOrder.tableNumber || null,
         promisedTime: shopOrder.promisedTime || 30
@@ -617,7 +621,7 @@ export class OrdersController {
         limit: Number(limit) * 2, // Get more to filter, then limit
         page: Number(page),
         assignedEmployeeId: user.id,
-        status: 'HISTORICAL' as any // This will get COMPLETED and CANCELLED orders
+        status: 'HISTORICAL' as unknown as OrderStatus // This will get COMPLETED and CANCELLED orders
       };
 
       let orders;
@@ -629,10 +633,10 @@ export class OrdersController {
           ordersType: typeof orders,
           ordersKeys: orders ? Object.keys(orders) : []
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('❌ Error calling getOrders for history:', {
-          message: error?.message,
-          stack: error?.stack
+          message: error instanceof Error ? error.message : undefined,
+          stack: error instanceof Error ? error.stack : undefined
         });
         throw error;
       }
