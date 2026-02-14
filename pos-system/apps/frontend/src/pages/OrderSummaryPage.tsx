@@ -100,6 +100,7 @@ export const OrderSummaryPage: React.FC = () => {
     employeeData: [],
   };
   const employeeStats = summary.topEmployees || [];
+  void employeeStats; // reserved for future UI section
   const employeeData = summary.employeeData || [];
 
   return (
