@@ -28,9 +28,9 @@ export const deliveryZonesController = {
       });
 
       // Parse coordinates from JSON string
-      const zonesWithParsedCoordinates = zones.map((zone: any) => ({
+      const zonesWithParsedCoordinates = zones.map((zone) => ({
         ...zone,
-        coordinates: JSON.parse(zone.coordinates)
+        coordinates: JSON.parse(zone.coordinates) as unknown
       }));
 
       res.json({
@@ -132,7 +132,7 @@ export const deliveryZonesController = {
       const validatedData = updateDeliveryZoneSchema.parse(req.body);
 
       // Convert coordinates to JSON string if provided
-      const updateData: any = {
+      const updateData: Record<string, unknown> = {
         ...validatedData,
         ...(validatedData.coordinates && {
           coordinates: JSON.stringify(validatedData.coordinates)
