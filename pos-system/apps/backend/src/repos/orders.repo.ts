@@ -285,15 +285,38 @@ export class OrdersRepository {
     return this.parseOrderItems(order);
   }
 
-  async create(data: any) {
-    const total = this.calculateTotal(data.items);
+  async create(data: Record<string, unknown>) {
+    const typed = data as {
+      status?: unknown;
+      type?: unknown;
+      notes?: unknown;
+      tableNumber?: unknown;
+      promisedTime?: unknown;
+      assignedEmployeeId?: unknown;
+      customer?: {
+        name?: unknown;
+        phone?: unknown;
+        email?: unknown;
+        address?: {
+          street?: unknown;
+          city?: unknown;
+          postalCode?: unknown;
+          latitude?: unknown;
+          longitude?: unknown;
+        };
+      };
+      items?: unknown;
+    };
+
+    const items = Array.isArray(typed.items) ? (typed.items as Array<{ quantity?: number; price?: number }>) : [];
+    const total = this.calculateTotal(items.map((i) => ({ quantity: Number(i.quantity ?? 1), price: Number(i.price ?? 0) })));
 
     // Create customer
     const customer = await this.prisma.customer.create({
       data: {
-        name: data.customer.name,
-        phone: data.customer.phone,
-        email: data.customer.email || '',
+        name: String(typed.customer?.name ?? ''),
+        phone: String(typed.customer?.phone ?? ''),
+        email: String(typed.customer?.email ?? ''),
       }
     });
 
@@ -301,41 +324,44 @@ export class OrdersRepository {
     const order = await this.prisma.order.create({
       data: {
         orderNumber: this.generateOrderNumber(),
-        status: data.status || 'OPEN',
-        type: data.type,
+        status: String(typed.status ?? 'OPEN'),
+        type: String(typed.type ?? ''),
         total,
-        notes: data.notes,
-        tableNumber: data.tableNumber,
-        promisedTime: data.promisedTime || 30,
+        notes: (typed.notes as unknown as string | undefined) ?? undefined,
+        tableNumber: (typed.tableNumber as unknown as string | undefined) ?? undefined,
+        promisedTime: Number(typed.promisedTime ?? 30),
         customerId: customer.id,
-        assignedEmployeeId: data.assignedEmployeeId,
+        assignedEmployeeId: (typed.assignedEmployeeId as unknown as string | undefined) ?? undefined,
         items: {
-          create: data.items.map((item: any) => ({
-            name: item.name,
-            quantity: item.quantity,
-            price: item.price,
-            total: item.quantity * item.price,
-            addons: item.addons ? JSON.stringify(item.addons) : null,
-            ingredients: item.ingredients ? JSON.stringify(item.ingredients) : null,
-            addedIngredients: item.addedIngredients ? JSON.stringify(item.addedIngredients) : null,
-            removedIngredients: item.removedIngredients ? JSON.stringify(item.removedIngredients) : null,
-            isHalfHalf: item.isHalfHalf || false,
-            selectedSize: item.selectedSize ? JSON.stringify(item.selectedSize) : null,
-            leftHalf: item.leftHalf ? JSON.stringify(item.leftHalf) : null,
-            rightHalf: item.rightHalf ? JSON.stringify(item.rightHalf) : null,
-            notes: item.notes || null,
-          }))
+          create: (data.items as unknown[]).map((item: unknown) => {
+            const typed = item as Record<string, unknown>;
+            return {
+            name: String(typed.name ?? ''),
+            quantity: Number(typed.quantity ?? 1),
+            price: Number(typed.price ?? 0),
+            total: Number(typed.quantity ?? 1) * Number(typed.price ?? 0),
+            addons: typed.addons ? JSON.stringify(typed.addons) : null,
+            ingredients: typed.ingredients ? JSON.stringify(typed.ingredients) : null,
+            addedIngredients: typed.addedIngredients ? JSON.stringify(typed.addedIngredients) : null,
+            removedIngredients: typed.removedIngredients ? JSON.stringify(typed.removedIngredients) : null,
+            isHalfHalf: Boolean(typed.isHalfHalf),
+            selectedSize: typed.selectedSize ? JSON.stringify(typed.selectedSize) : null,
+            leftHalf: typed.leftHalf ? JSON.stringify(typed.leftHalf) : null,
+            rightHalf: typed.rightHalf ? JSON.stringify(typed.rightHalf) : null,
+            notes: (typed.notes as unknown as string | null) ?? null,
+          };
+          })
         },
-        ...(data.type === 'DELIVERY' && data.customer.address && {
+        ...(typed.type === 'DELIVERY' && typed.customer?.address && {
           delivery: {
             create: {
               address: {
                 create: {
-                  street: data.customer.address.street,
-                  city: data.customer.address.city,
-                  postalCode: data.customer.address.postalCode,
-                  latitude: data.customer.address.latitude,
-                  longitude: data.customer.address.longitude,
+                  street: String(typed.customer.address.street ?? ''),
+                  city: String(typed.customer.address.city ?? ''),
+                  postalCode: String(typed.customer.address.postalCode ?? ''),
+                  latitude: typed.customer.address.latitude === undefined ? undefined : Number(typed.customer.address.latitude),
+                  longitude: typed.customer.address.longitude === undefined ? undefined : Number(typed.customer.address.longitude),
                 }
               }
             }
@@ -357,7 +383,7 @@ export class OrdersRepository {
     return this.parseOrderItems(order);
   }
 
-  async updateStatus(id: string, statusData: any) {
+  async updateStatus(id: string, statusData: Record<string, unknown>) {
     // Sprawdź status zamówienia przed aktualizacją
     const existingOrder = await this.prisma.order.findUnique({
       where: { id },
@@ -376,9 +402,9 @@ export class OrdersRepository {
     });
 
     // Transform completedBy object to completedById if needed
-    const updateData = { ...statusData };
+    const updateData = { ...statusData } as Record<string, unknown>;
     if (updateData.completedBy && typeof updateData.completedBy === 'object') {
-      updateData.completedById = updateData.completedBy.id;
+      updateData.completedById = (updateData.completedBy as { id?: string }).id;
       delete updateData.completedBy;
     }
 
@@ -413,15 +439,16 @@ export class OrdersRepository {
     return this.parseOrderItems(order);
   }
 
-  async updateOrder(id: string, data: any) {
+  async updateOrder(id: string, data: Record<string, unknown>) {
     console.log('🔄 updateOrder called with data:', data);
     console.log('🔄 Items data:', data.items);
     if (data.items) {
-      data.items.forEach((item: any, index: number) => {
-        console.log(`🔄 Item ${index}:`, item.name);
-        console.log(`  - selectedSize:`, item.selectedSize);
-        console.log(`  - removedIngredients:`, item.removedIngredients);
-        console.log(`  - addons:`, item.addons);
+      (data.items as unknown[]).forEach((item: unknown, index: number) => {
+        const typed = item as Record<string, unknown>;
+        console.log(`🔄 Item ${index}:`, typed.name);
+        console.log(`  - selectedSize:`, typed.selectedSize);
+        console.log(`  - removedIngredients:`, typed.removedIngredients);
+        console.log(`  - addons:`, typed.addons);
       });
     }
     
@@ -436,7 +463,7 @@ export class OrdersRepository {
     }
     
     // Prepare update data for order
-    const orderUpdateData: any = {};
+    const orderUpdateData: Record<string, unknown> = {};
     
     // Update basic order fields
     if (data.type !== undefined) orderUpdateData.type = data.type;
@@ -488,13 +515,18 @@ export class OrdersRepository {
     
     // Handle customer update
     if (data.customer) {
-      console.log('👤 Updating customer:', data.customer);
+      const customer = data.customer as {
+        name?: unknown;
+        phone?: unknown;
+        email?: unknown;
+      };
+      console.log('👤 Updating customer:', customer);
       await this.prisma.customer.update({
         where: { id: existingOrder.customerId },
         data: {
-          name: data.customer.name,
-          phone: data.customer.phone,
-          email: data.customer.email || null
+          name: String(customer.name ?? ''),
+          phone: String(customer.phone ?? ''),
+          email: customer.email ? String(customer.email) : null
         }
       });
     }
@@ -510,22 +542,25 @@ export class OrdersRepository {
       
       // Create new items
       await this.prisma.orderItem.createMany({
-        data: data.items.map((item: any) => ({
-          name: item.name,
-          quantity: item.quantity,
-          price: item.price,
-          total: item.quantity * item.price,
+        data: (data.items as unknown[]).map((item: unknown) => {
+          const typed = item as Record<string, unknown>;
+          return {
+          name: String(typed.name ?? ''),
+          quantity: Number(typed.quantity ?? 1),
+          price: Number(typed.price ?? 0),
+          total: Number(typed.quantity ?? 1) * Number(typed.price ?? 0),
           orderId: id,
-          addons: item.addons ? JSON.stringify(item.addons) : null,
-          ingredients: item.ingredients ? JSON.stringify(item.ingredients) : null,
-          addedIngredients: item.addedIngredients ? JSON.stringify(item.addedIngredients) : null,
-          removedIngredients: item.removedIngredients ? JSON.stringify(item.removedIngredients) : null,
-          isHalfHalf: item.isHalfHalf || false,
-          selectedSize: item.selectedSize ? JSON.stringify(item.selectedSize) : null,
-          leftHalf: item.leftHalf ? JSON.stringify(item.leftHalf) : null,
-          rightHalf: item.rightHalf ? JSON.stringify(item.rightHalf) : null,
-          notes: item.notes || null,
-        }))
+          addons: typed.addons ? JSON.stringify(typed.addons) : null,
+          ingredients: typed.ingredients ? JSON.stringify(typed.ingredients) : null,
+          addedIngredients: typed.addedIngredients ? JSON.stringify(typed.addedIngredients) : null,
+          removedIngredients: typed.removedIngredients ? JSON.stringify(typed.removedIngredients) : null,
+          isHalfHalf: Boolean(typed.isHalfHalf),
+          selectedSize: typed.selectedSize ? JSON.stringify(typed.selectedSize) : null,
+          leftHalf: typed.leftHalf ? JSON.stringify(typed.leftHalf) : null,
+          rightHalf: typed.rightHalf ? JSON.stringify(typed.rightHalf) : null,
+          notes: (typed.notes as unknown as string | null) ?? null,
+        };
+        })
       });
       
       // Recalculate total
@@ -1048,7 +1083,7 @@ export class OrdersRepository {
     return `ORD-${timestamp}-${random}`;
   }
 
-  private calculateTotal(items: any[]): number {
+  private calculateTotal(items: Array<{ quantity: number; price: number }>): number {
     return items.reduce((sum, item) => sum + (item.quantity * item.price), 0);
   }
 }

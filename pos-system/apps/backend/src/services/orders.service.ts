@@ -23,25 +23,32 @@ export class OrdersService {
   }
 
   async createOrder(data: CreateOrderInput) {
+    const typed = data as {
+      type?: string;
+      customer?: { address?: unknown };
+      tableNumber?: string;
+      items?: Array<{ name?: string; price?: number }>;
+    };
+
     // Validate delivery address for delivery orders
-    if (data.type === 'DELIVERY' && !data.customer.address) {
+    if (typed.type === 'DELIVERY' && !typed.customer?.address) {
       throw new Error('Adres dostawy jest wymagany dla zamówień typu dostawa');
     }
 
     // Validate table number for dine-in orders
-    if (data.type === 'DINE_IN' && (!data.tableNumber || data.tableNumber.trim() === '')) {
+    if (typed.type === 'DINE_IN' && (!typed.tableNumber || typed.tableNumber.trim() === '')) {
       throw new Error('Numer stolika jest wymagany dla zamówień na miejscu');
     }
 
     // Validate items
-    if (data.items.length === 0) {
+    if (!typed.items || typed.items.length === 0) {
       throw new Error('Zamówienie musi zawierać przynajmniej jeden produkt');
     }
 
     // Validate item prices
-    for (const item of data.items) {
-      if (item.price <= 0) {
-        throw new Error(`Cena produktu "${item.name}" musi być większa od 0`);
+    for (const item of typed.items) {
+      if (!item.price || item.price <= 0) {
+        throw new Error(`Cena produktu "${item.name || ''}" musi być większa od 0`);
       }
     }
 
@@ -74,7 +81,7 @@ export class OrdersService {
     }
 
     // Build update data - ensure paymentMethod is preserved when status changes to COMPLETED
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
     
     // Always preserve paymentMethod if it's provided
     if (data.paymentMethod) {
@@ -107,7 +114,15 @@ export class OrdersService {
     return this.ordersRepo.updateStatus(id, updateData);
   }
 
-  async updateOrder(id: string, data: any) {
+  async updateOrder(
+    id: string,
+    data: {
+      type?: string;
+      customer?: { address?: unknown };
+      items?: Array<{ name?: string; price?: number }>;
+      tableNumber?: unknown;
+    } & Record<string, unknown>
+  ) {
     const order = await this.ordersRepo.findById(id);
     if (!order) {
       throw new Error(`Zamówienie o ID ${id} nie zostało znalezione`);

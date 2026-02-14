@@ -110,7 +110,7 @@ export class EmployeesService {
     return { generated, total: allEmployees.length };
   }
   
-  private generateUniqueLoginCode(existingEmployees: any[]): string {
+  private generateUniqueLoginCode(existingEmployees: Array<{ loginCode?: string | null }>): string {
     const existingCodes = existingEmployees
       .map(emp => emp.loginCode)
       .filter(code => code && /^\d{4}$/.test(code));
@@ -132,7 +132,7 @@ export class EmployeesService {
   }) {
     // Validate email uniqueness (check all employees, including inactive)
     const existingEmployee = await this.employeesRepo.findAllIncludingInactive();
-    if (existingEmployee.some((emp: any) => emp.email === data.email)) {
+    if (existingEmployee.some((emp: { email?: string }) => emp.email === data.email)) {
       throw new Error('Pracownik z tym adresem email już istnieje');
     }
 
@@ -176,7 +176,7 @@ export class EmployeesService {
     // Validate email uniqueness if email is being updated
     if (data.email && data.email !== employee.email) {
       const existingEmployees = await this.employeesRepo.findAll();
-      if (existingEmployees.some((emp: any) => emp.email === data.email && emp.id !== id)) {
+      if (existingEmployees.some((emp: { email?: string; id: string }) => emp.email === data.email && emp.id !== id)) {
         throw new Error('Pracownik z tym adresem email już istnieje');
       }
     }
