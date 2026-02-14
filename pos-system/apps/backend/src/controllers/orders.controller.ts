@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
 import { createOrderSchema, ordersFiltersSchema, updateOrderSchema, updateOrderStatusSchema, validateInput } from '../lib/validate';
 import { OrdersService } from '../services/orders.service';
+import { dlog } from '../lib/logger';
 import {
     OrderStatus,
     OrderSummaryFilters,
@@ -20,11 +21,11 @@ export class OrdersController {
 
   async getOrders(req: Request, res: Response, next: NextFunction) {
     try {
-      console.log('getOrders called with query:', req.query);
+      dlog('getOrders called with query:', req.query);
       
       // Parse and validate query parameters
       const filters = ordersFiltersSchema.parse(req.query);
-      console.log('Validated filters:', filters);
+      dlog('Validated filters:', filters);
       
       const result = await this.ordersService.getOrders({
         ...filters,
@@ -70,10 +71,10 @@ export class OrdersController {
 
   async createOrder(req: Request, res: Response, next: NextFunction) {
     try {
-      console.log('createOrder called with body:', JSON.stringify(req.body, null, 2));
+      dlog('createOrder called with body:', JSON.stringify(req.body, null, 2));
       
       const orderData = validateInput(createOrderSchema, req.body);
-      console.log('Validated orderData:', JSON.stringify(orderData, null, 2));
+      dlog('Validated orderData:', JSON.stringify(orderData, null, 2));
       
       const newOrder = await this.ordersService.createOrder(orderData);
       
@@ -165,15 +166,15 @@ export class OrdersController {
       const { limit = 20, page = 1 } = req.query;
       
       // EXTENSIVE LOGGING FOR DEBUGGING
-      console.log('========================================');
-      console.log('📦 getAvailableOrders CALLED!');
-      console.log('   Method:', req.method);
-      console.log('   URL:', req.url);
-      console.log('   Origin:', req.get('Origin'));
-      console.log('   User-Agent:', req.get('User-Agent'));
-      console.log('   Query params:', { limit, page });
-      console.log('   Headers:', JSON.stringify(req.headers, null, 2));
-      console.log('========================================');
+      dlog('========================================');
+      dlog('📦 getAvailableOrders CALLED!');
+      dlog('   Method:', req.method);
+      dlog('   URL:', req.url);
+      dlog('   Origin:', req.get('Origin'));
+      dlog('   User-Agent:', req.get('User-Agent'));
+      dlog('   Query params:', { limit, page });
+      dlog('   Headers:', JSON.stringify(req.headers, null, 2));
+      dlog('========================================');
       
       // Get orders with status OPEN, PENDING, or READY (new orders available for assignment)
       // Only show DELIVERY orders for drivers
@@ -186,11 +187,11 @@ export class OrdersController {
         assignedEmployeeId: null // Only unassigned orders
       };
 
-      console.log('📦 Fetching orders with filters:', filters);
+      dlog('📦 Fetching orders with filters:', filters);
       const orders = await this.ordersService.getOrders(filters);
       
-      console.log('📦 Found orders:', orders.orders.length, 'out of', orders.total);
-      console.log('📦 Order IDs:', orders.orders.map((o) => o.id).slice(0, 5));
+      dlog('📦 Found orders:', orders.orders.length, 'out of', orders.total);
+      dlog('📦 Order IDs:', orders.orders.map((o) => o.id).slice(0, 5));
       
       const response = {
         success: true,
@@ -203,13 +204,13 @@ export class OrdersController {
         }
       };
       
-      console.log('📦 Sending response with', response.data.length, 'orders');
-      console.log('📦 Response structure:', {
+      dlog('📦 Sending response with', response.data.length, 'orders');
+      dlog('📦 Response structure:', {
         success: response.success,
         dataLength: response.data.length,
         pagination: response.pagination
       });
-      console.log('========================================');
+      dlog('========================================');
       
       res.json(response);
     } catch (error) {
@@ -224,7 +225,7 @@ export class OrdersController {
       const { limit = 20, page = 1 } = req.query;
       const employeeId = req.user?.id; // set by auth middleware
       
-      console.log('🔵 [getMyOrders] Request received:', {
+      dlog('🔵 [getMyOrders] Request received:', {
         employeeId,
         limit,
         page,
@@ -248,9 +249,9 @@ export class OrdersController {
         // Removed type filter to show all assigned orders (DELIVERY, TAKEAWAY, DINE_IN)
       };
 
-      console.log('🔵 [getMyOrders] Fetching orders with filters:', filters);
+      dlog('🔵 [getMyOrders] Fetching orders with filters:', filters);
       const orders = await this.ordersService.getOrders(filters);
-      console.log(`✅ [getMyOrders] Found ${orders.orders.length} orders for employee ${employeeId}`);
+      dlog(`✅ [getMyOrders] Found ${orders.orders.length} orders for employee ${employeeId}`);
       
       res.json({
         success: true,
@@ -274,7 +275,7 @@ export class OrdersController {
       const employeeId = req.user?.id; // set by auth middleware
       const employeeRole = req.user?.role;
       
-      console.log('🔵 [claimOrder] Request received:', {
+      dlog('🔵 [claimOrder] Request received:', {
         orderId: id,
         employeeId,
         employeeRole,
@@ -289,9 +290,9 @@ export class OrdersController {
         });
       }
 
-      console.log('🔵 [claimOrder] Attempting to assign order...');
+      dlog('🔵 [claimOrder] Attempting to assign order...');
       const order = await this.ordersService.assignEmployee(id, employeeId);
-      console.log('✅ [claimOrder] Order assigned successfully');
+      dlog('✅ [claimOrder] Order assigned successfully');
       
       res.json({
         success: true,
@@ -318,7 +319,7 @@ export class OrdersController {
     try {
       const { id } = req.params;
       const user = req.user; // Get user from auth middleware (optional)
-      console.log('🔄 updateOrderStatus called:', { 
+      dlog('🔄 updateOrderStatus called:', { 
         id, 
         body: req.body, 
         userId: user?.id,
@@ -327,7 +328,7 @@ export class OrdersController {
       });
       
       const statusData = validateInput(updateOrderStatusSchema, req.body);
-      console.log('✅ Validated statusData:', {
+      dlog('✅ Validated statusData:', {
         status: statusData.status,
         paymentMethod: statusData.paymentMethod,
         hasStatus: !!statusData.status,
@@ -358,7 +359,7 @@ export class OrdersController {
       // Ensure paymentMethod is always passed through if provided (cast: validated role may be inferred as unknown by TS)
       const order = await this.ordersService.updateOrderStatus(id, statusData as UpdateOrderStatusInput, user?.id);
       
-      console.log('✅ Order status updated successfully:', {
+      dlog('✅ Order status updated successfully:', {
         orderId: id,
         finalStatus: order.status,
         finalPaymentMethod: order.paymentMethod,
@@ -384,15 +385,15 @@ export class OrdersController {
   async updateOrder(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      console.log('updateOrder called with:', { id, body: req.body });
-      console.log('Request body keys:', Object.keys(req.body));
-      console.log('Request body type:', typeof req.body);
-      console.log('Request body type field:', req.body.type);
-      console.log('Request body customer field:', req.body.customer);
-      console.log('Request body items field:', req.body.items);
+      dlog('updateOrder called with:', { id, body: req.body });
+      dlog('Request body keys:', Object.keys(req.body));
+      dlog('Request body type:', typeof req.body);
+      dlog('Request body type field:', req.body.type);
+      dlog('Request body customer field:', req.body.customer);
+      dlog('Request body items field:', req.body.items);
       
       const orderData = validateInput(updateOrderSchema, req.body);
-      console.log('Validated orderData:', orderData);
+      dlog('Validated orderData:', orderData);
       
       const order = await this.ordersService.updateOrder(id, orderData);
       
@@ -437,7 +438,7 @@ export class OrdersController {
 
   async getOrdersForMap(_req: Request, res: Response, next: NextFunction) {
     try {
-      console.log('getOrdersForMap called');
+      dlog('getOrdersForMap called');
       const result = await this.ordersService.getOrdersForMap();
       
       // Dodaj cache headers dla lepszej wydajności
@@ -481,7 +482,7 @@ export class OrdersController {
       const { id } = req.params;
       const { employeeId }: AssignEmployeeRequest = req.body;
       
-      console.log('assignEmployee called with:', { id, employeeId });
+      dlog('assignEmployee called with:', { id, employeeId });
       
       const order = await this.ordersService.assignEmployee(id, employeeId);
       
@@ -543,7 +544,7 @@ export class OrdersController {
   // Restaurant-shop adapter - creates order from shop format and maps statuses
   async createOrderFromShop(req: Request, res: Response, next: NextFunction) {
     try {
-      console.log('createOrderFromShop called with body:', JSON.stringify(req.body, null, 2));
+      dlog('createOrderFromShop called with body:', JSON.stringify(req.body, null, 2));
       
       const shopOrder = req.body;
       
@@ -585,7 +586,7 @@ export class OrdersController {
         promisedTime: shopOrder.promisedTime || 30
       };
       
-      console.log('Transformed to POS format:', JSON.stringify(posOrderData, null, 2));
+      dlog('Transformed to POS format:', JSON.stringify(posOrderData, null, 2));
       
       const newOrder = await this.ordersService.createOrder(posOrderData);
       
@@ -614,7 +615,7 @@ export class OrdersController {
       
       const { limit = 100, page = 1 } = req.query;
       
-      console.log('📋 Getting order history for user:', user.id);
+      dlog('📋 Getting order history for user:', user.id);
       
       // Get completed orders for this driver (use HISTORICAL to get COMPLETED and CANCELLED)
       const filters = {
@@ -627,7 +628,7 @@ export class OrdersController {
       let orders;
       try {
         orders = await this.ordersService.getOrders(filters);
-        console.log('📋 getOrders response structure (history):', {
+        dlog('📋 getOrders response structure (history):', {
           hasOrders: !!orders,
           hasOrdersOrders: !!orders?.orders,
           ordersType: typeof orders,
@@ -656,7 +657,7 @@ export class OrdersController {
         });
       }
       
-      console.log('📋 Raw orders from database (history):', {
+      dlog('📋 Raw orders from database (history):', {
         total: orders.orders.length,
         sample: orders.orders.slice(0, 5).map((o: unknown) => {
           const typed = o as { orderNumber?: string; status?: unknown; paymentMethod?: unknown; total?: number; assignedEmployeeId?: string };
@@ -680,7 +681,7 @@ export class OrdersController {
         if (!typed) return false;
         const hasPayment = typed.paymentMethod === 'CASH' || typed.paymentMethod === 'CARD' || typed.paymentMethod === 'PAID';
         if (!hasPayment) {
-          console.log('⚠️ History: Order without payment method:', {
+          dlog('⚠️ History: Order without payment method:', {
             orderNumber: typed.orderNumber || 'N/A',
             status: typed.status || 'N/A',
             paymentMethod: typed.paymentMethod || null
@@ -689,7 +690,7 @@ export class OrdersController {
         return hasPayment;
       });
       
-      console.log('📋 Finalized orders (history, with payment):', {
+      dlog('📋 Finalized orders (history, with payment):', {
         count: finalizedOrders.length,
         sample: finalizedOrders.slice(0, 5).map((o: FinalizedOrder) => ({
           orderNumber: o?.orderNumber || 'N/A',
@@ -709,7 +710,7 @@ export class OrdersController {
       const totalFinalized = finalizedOrders.length;
       const totalPages = Math.ceil(totalFinalized / Number(limit));
       
-      console.log('📋 Found orders for history:', {
+      dlog('📋 Found orders for history:', {
         total: orders.orders.length,
         finalized: finalizedOrders.length,
         paginated: paginatedOrders.length,
@@ -744,7 +745,7 @@ export class OrdersController {
     try {
       const user = req.user;
       
-      console.log('📊 getPaymentStats called, user:', user?.id || 'no user');
+      dlog('📊 getPaymentStats called, user:', user?.id || 'no user');
       
       // If no user (auth disabled), return empty stats
       if (!user || !user.id) {
@@ -772,7 +773,7 @@ export class OrdersController {
       let orders;
       try {
         orders = await this.ordersService.getOrders(filters);
-        console.log('📊 getOrders response structure (stats):', {
+        dlog('📊 getOrders response structure (stats):', {
           hasOrders: !!orders,
           hasOrdersOrders: !!orders?.orders,
           ordersType: typeof orders,
@@ -801,7 +802,7 @@ export class OrdersController {
         });
       }
       
-      console.log('📊 Raw orders from database:', {
+      dlog('📊 Raw orders from database:', {
         total: orders.orders.length,
         sample: orders.orders.slice(0, 5).map((o: unknown) => {
           const typed = o as { orderNumber?: string; status?: unknown; paymentMethod?: unknown; total?: number; assignedEmployeeId?: string };
@@ -827,7 +828,7 @@ export class OrdersController {
         // These are orders that were completed with payment
         const hasPayment = typed.paymentMethod === 'CASH' || typed.paymentMethod === 'CARD' || typed.paymentMethod === 'PAID';
         if (!hasPayment) {
-          console.log('⚠️ Order without payment method:', {
+          dlog('⚠️ Order without payment method:', {
             orderNumber: typed.orderNumber || 'N/A',
             status: typed.status || 'N/A',
             paymentMethod: typed.paymentMethod || null
@@ -836,7 +837,7 @@ export class OrdersController {
         return hasPayment;
       });
       
-      console.log('📊 Finalized orders (with payment):', {
+      dlog('📊 Finalized orders (with payment):', {
         count: finalizedOrders.length,
         sample: finalizedOrders.slice(0, 5).map((o: FinalizedOrder) => ({
           orderNumber: o?.orderNumber || 'N/A',
@@ -871,7 +872,7 @@ export class OrdersController {
         totalAmount: Number(totalCash) + Number(totalCard) + Number(totalPaid)
       };
       
-      console.log('📊 Payment stats calculated:', {
+      dlog('📊 Payment stats calculated:', {
         ...stats,
         breakdown: {
           cashOrders: cashOrders.length,

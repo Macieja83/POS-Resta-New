@@ -2,6 +2,7 @@ import { OrdersRepository } from '../repos/orders.repo';
 import { EmployeesRepository } from '../repos/employees.repo';
 import { OrderStatus, OrderSummaryFilters, OrderSummaryResponse, OrdersFiltersInput, CreateOrderInput, UpdateOrderStatusInput } from '../types/local';
 import { AppError } from '../middlewares/errorHandler';
+import { dlog } from '../lib/logger';
 
 export class OrdersService {
   constructor(
@@ -64,14 +65,14 @@ export class OrdersService {
     // AUTO-COMPLETE: If order is DELIVERED and paymentMethod is being set,
     // automatically change status to COMPLETED (moves to historical)
     if (order.status === 'DELIVERED' && data.paymentMethod && !data.status) {
-      console.log('✅ Auto-completing DELIVERED order with payment method');
+      dlog('✅ Auto-completing DELIVERED order with payment method');
       data.status = OrderStatus.COMPLETED;
     }
     
     // AUTO-COMPLETE: If status is being set to DELIVERED and paymentMethod is also being set,
     // automatically change status to COMPLETED (moves to historical immediately)
     if (data.status === OrderStatus.DELIVERED && data.paymentMethod) {
-      console.log('✅ Auto-completing order: DELIVERED + payment method -> COMPLETED');
+      dlog('✅ Auto-completing order: DELIVERED + payment method -> COMPLETED');
       data.status = OrderStatus.COMPLETED;
     }
 
@@ -86,13 +87,13 @@ export class OrdersService {
     // Always preserve paymentMethod if it's provided
     if (data.paymentMethod) {
       updateData.paymentMethod = data.paymentMethod;
-      console.log('💰 Payment method set:', data.paymentMethod);
+      dlog('💰 Payment method set:', data.paymentMethod);
     }
     
     // If status is being updated, include it
     if (data.status) {
       updateData.status = data.status;
-      console.log('📝 Status updated to:', data.status);
+      dlog('📝 Status updated to:', data.status);
     }
 
     // If order is being completed and we have userId, ensure completedById is set
@@ -105,11 +106,11 @@ export class OrdersService {
           name: '',
           role: 'DRIVER'
         };
-        console.log('✅ Setting completedById:', userId);
+        dlog('✅ Setting completedById:', userId);
     }
     }
 
-    console.log('💾 Final updateData:', JSON.stringify(updateData, null, 2));
+    dlog('💾 Final updateData:', JSON.stringify(updateData, null, 2));
 
     return this.ordersRepo.updateStatus(id, updateData);
   }
