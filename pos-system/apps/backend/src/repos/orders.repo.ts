@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { OrdersFilters, OrderSummaryFilters, OrderSummaryResponse, OrderStatus } from '../types/local';
 import { AppError } from '../middlewares/errorHandler';
+import { dlog } from '../lib/logger';
 
 export class OrdersRepository {
   constructor(private prisma: PrismaClient) {}
@@ -394,7 +395,7 @@ export class OrdersRepository {
       throw new AppError(`Zamówienie o podanym ID nie zostało znalezione`, 404);
     }
 
-    console.log('🔄 Updating order status:', {
+    dlog('🔄 Updating order status:', {
       orderId: id,
       currentStatus: existingOrder.status,
       currentPaymentMethod: existingOrder.paymentMethod,
@@ -410,7 +411,7 @@ export class OrdersRepository {
 
     // Nie aktualizuj paymentMethod dla zamówień anulowanych
     if (updateData.paymentMethod && existingOrder.status === 'CANCELLED') {
-      console.log('⚠️ Skipping paymentMethod update for CANCELLED order');
+      dlog('⚠️ Skipping paymentMethod update for CANCELLED order');
       delete updateData.paymentMethod;
     }
 
@@ -429,7 +430,7 @@ export class OrdersRepository {
       }
     });
 
-    console.log('✅ Order updated:', {
+    dlog('✅ Order updated:', {
       orderId: id,
       newStatus: order.status,
       newPaymentMethod: order.paymentMethod,
@@ -440,15 +441,15 @@ export class OrdersRepository {
   }
 
   async updateOrder(id: string, data: Record<string, unknown>) {
-    console.log('🔄 updateOrder called with data:', data);
-    console.log('🔄 Items data:', data.items);
+    dlog('🔄 updateOrder called with data:', data);
+    dlog('🔄 Items data:', data.items);
     if (data.items) {
       (data.items as unknown[]).forEach((item: unknown, index: number) => {
         const typed = item as Record<string, unknown>;
-        console.log(`🔄 Item ${index}:`, typed.name);
-        console.log(`  - selectedSize:`, typed.selectedSize);
-        console.log(`  - removedIngredients:`, typed.removedIngredients);
-        console.log(`  - addons:`, typed.addons);
+        dlog(`🔄 Item ${index}:`, typed.name);
+        dlog(`  - selectedSize:`, typed.selectedSize);
+        dlog(`  - removedIngredients:`, typed.removedIngredients);
+        dlog(`  - addons:`, typed.addons);
       });
     }
     
@@ -477,7 +478,7 @@ export class OrdersRepository {
     
     // Handle type change - remove delivery address and assigned driver for non-delivery orders
     if (data.type !== undefined && data.type !== 'DELIVERY') {
-      console.log('🚚 Type changed to non-delivery, removing address and driver');
+      dlog('🚚 Type changed to non-delivery, removing address and driver');
       
       // Remove delivery address if exists
       const existingDelivery = await this.prisma.delivery.findUnique({
@@ -485,7 +486,7 @@ export class OrdersRepository {
       });
       
       if (existingDelivery) {
-        console.log('🗑️ Removing delivery address');
+        dlog('🗑️ Removing delivery address');
         
         // Check if address is used by other deliveries
         const addressUsageCount = await this.prisma.delivery.count({
@@ -499,7 +500,7 @@ export class OrdersRepository {
         
         // If address is not used by other deliveries, delete it
         if (addressUsageCount <= 1) {
-          console.log('🗑️ Deleting unused address');
+          dlog('🗑️ Deleting unused address');
           await this.prisma.address.delete({
             where: { id: existingDelivery.addressId }
           });
@@ -508,7 +509,7 @@ export class OrdersRepository {
       
       // Remove assigned driver
       if (existingOrder.assignedEmployeeId) {
-        console.log('👨‍💼 Removing assigned driver');
+        dlog('👨‍💼 Removing assigned driver');
         orderUpdateData.assignedEmployeeId = null;
       }
     }
@@ -520,7 +521,7 @@ export class OrdersRepository {
         phone?: unknown;
         email?: unknown;
       };
-      console.log('👤 Updating customer:', customer);
+      dlog('👤 Updating customer:', customer);
       await this.prisma.customer.update({
         where: { id: existingOrder.customerId },
         data: {
@@ -533,7 +534,7 @@ export class OrdersRepository {
     
     // Handle items update
     if (data.items && Array.isArray(data.items)) {
-      console.log('📦 Updating items:', data.items);
+      dlog('📦 Updating items:', data.items);
       
       // Delete existing items
       await this.prisma.orderItem.deleteMany({
@@ -597,7 +598,7 @@ export class OrdersRepository {
       }));
     }
 
-    console.log('✅ Order updated successfully:', updatedOrder.id);
+    dlog('✅ Order updated successfully:', updatedOrder.id);
     return updatedOrder;
   }
 
@@ -755,7 +756,7 @@ export class OrdersRepository {
         throw new Error(`Nie można przypisać zamówienia: nieprawidłowy typ zamówienia (${existingOrder.type})`);
       }
       
-      console.log(`ℹ️ [assignEmployeeOptimized] Order type: ${existingOrder.type}, status: ${existingOrder.status}`);
+      dlog(`ℹ️ [assignEmployeeOptimized] Order type: ${existingOrder.type}, status: ${existingOrder.status}`);
 
       // Sprawdź czy zamówienie już jest przypisane do tego samego pracownika
       if (existingOrder.assignedEmployeeId === employeeId) {
@@ -773,7 +774,7 @@ export class OrdersRepository {
         throw new Error('Pracownik nie został znaleziony');
       }
 
-      console.log(`ℹ️ [assignEmployeeOptimized] Employee found: ${employee.name}, role: ${employee.role}`);
+      dlog(`ℹ️ [assignEmployeeOptimized] Employee found: ${employee.name}, role: ${employee.role}`);
 
       // Allow DRIVER, EMPLOYEE, and MANAGER roles to claim orders
       // DRIVER for delivery orders, EMPLOYEE/MANAGER for general orders and management

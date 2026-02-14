@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { EmployeesService } from '../services/employees.service';
 import { generateToken } from '../middlewares/auth';
+import { dlog } from '../lib/logger';
 
 export class EmployeesController {
   constructor(private employeesService: EmployeesService) {}
@@ -137,13 +138,13 @@ export class EmployeesController {
       const { loginCode, email } = req.body;
       
       // EXTENSIVE LOGGING FOR DEBUGGING
-      console.log('========================================');
-      console.log('🔐 loginWithCode CALLED!');
-      console.log('   LoginCode:', loginCode);
-      console.log('   Email:', email);
-      console.log('   Origin:', req.get('Origin'));
-      console.log('   User-Agent:', req.get('User-Agent'));
-      console.log('========================================');
+      dlog('========================================');
+      dlog('🔐 loginWithCode CALLED!');
+      dlog('   LoginCode:', loginCode);
+      dlog('   Email:', email);
+      dlog('   Origin:', req.get('Origin'));
+      dlog('   User-Agent:', req.get('User-Agent'));
+      dlog('========================================');
       
       let employee;
       
@@ -152,7 +153,7 @@ export class EmployeesController {
         try {
           employee = await this.employeesService.getEmployeeByEmail(email);
         } catch {
-          console.log('Email login failed, trying loginCode...');
+          dlog('Email login failed, trying loginCode...');
         }
       }
       
@@ -180,7 +181,7 @@ export class EmployeesController {
         });
       }
       
-      console.log('✅ Employee found:', {
+      dlog('✅ Employee found:', {
         id: employee.id,
         name: employee.name,
         email: employee.email,
@@ -196,8 +197,8 @@ export class EmployeesController {
         role: employee.role
       });
       
-      console.log('✅ Token generated successfully');
-      console.log('========================================');
+      dlog('✅ Token generated successfully');
+      dlog('========================================');
       
       res.json({
         success: true,
@@ -225,7 +226,7 @@ export class EmployeesController {
       }
       const { latitude, longitude, orderId } = req.body;
       
-      console.log('📍 Driver location update request:', {
+      dlog('📍 Driver location update request:', {
         driverId: user.id,
         driverEmail: user.email,
         latitude,
@@ -273,7 +274,7 @@ export class EmployeesController {
         orderId
       );
       
-      console.log('✅ Driver location updated successfully:', {
+      dlog('✅ Driver location updated successfully:', {
         driverId: user.id,
         locationId: location.id,
         hasDriver: !!location.driver,
@@ -301,7 +302,7 @@ export class EmployeesController {
         return res.status(401).json({ success: false, error: 'Brak autoryzacji' });
       }
       
-      console.log('📍 Deactivating driver location:', {
+      dlog('📍 Deactivating driver location:', {
         driverId: user.id,
         driverEmail: user.email,
         timestamp: new Date().toISOString()
@@ -312,7 +313,7 @@ export class EmployeesController {
       
       // If location doesn't exist, still return success (nothing to deactivate)
       if (!location) {
-        console.log('ℹ️  No location found to deactivate for driver:', user.id);
+        dlog('ℹ️  No location found to deactivate for driver:', user.id);
         return res.json({
           success: true,
           message: 'Location tracking stopped (no active location found)',
@@ -323,7 +324,7 @@ export class EmployeesController {
         });
       }
       
-      console.log('✅ Driver location deactivated successfully:', {
+      dlog('✅ Driver location deactivated successfully:', {
         driverId: location.driverId,
         driverName: location.driver?.name || 'Unknown',
         isActive: location.isActive
@@ -345,7 +346,7 @@ export class EmployeesController {
 
   async getDriverLocations(req: Request, res: Response, next: NextFunction) {
     try {
-      console.log('📍 [GET] getDriverLocations endpoint called', {
+      dlog('📍 [GET] getDriverLocations endpoint called', {
         timestamp: new Date().toISOString(),
         ip: req.ip,
         userAgent: req.get('user-agent')
@@ -354,10 +355,10 @@ export class EmployeesController {
       // Get real driver locations from database
       const locations = await this.employeesService.getActiveDriverLocations();
       
-      console.log('📍 [GET] Found locations in service:', locations.length, 'active locations');
+      dlog('📍 [GET] Found locations in service:', locations.length, 'active locations');
       
       if (locations.length > 0) {
-        console.log('📍 [GET] Driver locations data:', locations.map(l => ({
+        dlog('📍 [GET] Driver locations data:', locations.map(l => ({
           driverId: l.driverId,
           driverName: l.driver?.name || 'Unknown',
           latitude: l.latitude,
@@ -381,7 +382,7 @@ export class EmployeesController {
         isActive: location.isActive
       }));
       
-      console.log('📍 [GET] Returning driver locations to frontend:', {
+      dlog('📍 [GET] Returning driver locations to frontend:', {
         count: driverLocations.length,
         timestamp: new Date().toISOString()
       });
