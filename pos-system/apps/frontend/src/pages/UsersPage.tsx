@@ -46,21 +46,23 @@ export const UsersPage: React.FC = () => {
       resetForm();
       alert('Pracownik został dodany');
     },
-    onError: (error: any) => {
-      alert(error.message || 'Błąd podczas dodawania pracownika');
+    onError: (error: unknown) => {
+      const message = error instanceof Error ? error.message : undefined;
+      alert(message || 'Błąd podczas dodawania pracownika');
     }
   });
 
   const updateEmployeeMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) => employeesApi.updateEmployee(id, data),
+    mutationFn: ({ id, data }: { id: string; data: Partial<Employee> }) => employeesApi.updateEmployee(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['employees'] });
       setEditingUser(null);
       resetForm();
       alert('Pracownik został zaktualizowany');
     },
-    onError: (error: any) => {
-      alert(error.message || 'Błąd podczas aktualizacji pracownika');
+    onError: (error: unknown) => {
+      const message = error instanceof Error ? error.message : undefined;
+      alert(message || 'Błąd podczas aktualizacji pracownika');
     }
   });
 
@@ -70,8 +72,9 @@ export const UsersPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['employees'] });
       alert('Pracownik został usunięty');
     },
-    onError: (error: any) => {
-      alert(error.message || 'Błąd podczas usuwania pracownika');
+    onError: (error: unknown) => {
+      const message = error instanceof Error ? error.message : undefined;
+      alert(message || 'Błąd podczas usuwania pracownika');
     }
   });
 
@@ -145,9 +148,16 @@ export const UsersPage: React.FC = () => {
           setEditCodeValue('');
           alert('Kod logowania został zaktualizowany');
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('Error updating login code:', error);
-        alert(error.response?.data?.error || 'Wystąpił błąd podczas aktualizacji kodu logowania');
+
+        const message =
+          error && typeof error === 'object' && 'response' in error
+            ? // axios-like
+              ((error as { response?: { data?: { error?: string } } }).response?.data?.error ?? undefined)
+            : undefined;
+
+        alert(message || 'Wystąpił błąd podczas aktualizacji kodu logowania');
       }
     }
   };
