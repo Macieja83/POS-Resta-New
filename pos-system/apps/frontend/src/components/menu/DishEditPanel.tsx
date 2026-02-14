@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { Dish, MenuCategory } from '../../api/menu';
+import { AddonGroup, Dish, MenuCategory, Size } from '../../api/menu';
 import { IngredientsManager } from './IngredientsManager';
 
 interface DishEditPanelProps {
   selectedDish: Dish | null;
   categories: MenuCategory[];
-  addonGroups: any[];
-  onUpdateDish: (id: string, data: any) => void;
+  addonGroups: AddonGroup[];
+  onUpdateDish: (id: string, data: Partial<Dish>) => void;
   onDeleteDish: () => void;
   onUpdateDishSizes: (id: string, sizes: { name: string; price: number }[]) => void;
   onAssignAddonGroup: (dishId: string, addonGroupId: string) => void;
@@ -162,7 +162,7 @@ export const DishEditPanel: React.FC<DishEditPanelProps> = ({
             value={localDish.categoryId}
             onChange={(e) => handleCategoryChange(e.target.value)}
           >
-            {categories.map((cat: any) => (
+            {categories.map((cat: MenuCategory) => (
               <option key={cat.id} value={cat.id}>{cat.name}</option>
             ))}
           </select>
@@ -232,7 +232,7 @@ export const DishEditPanel: React.FC<DishEditPanelProps> = ({
         <div className="form-group">
           <label>Rozmiary i ceny</label>
           <div className="sizes-list">
-            {localDish.sizes?.map((size: any, index: any) => (
+            {localDish.sizes?.map((size: Size, index: number) => (
               <div key={index} className="size-item">
                 <span className="size-name">{size.name}</span>
                 <input
@@ -268,7 +268,7 @@ export const DishEditPanel: React.FC<DishEditPanelProps> = ({
               <h4>Przypisane grupy dodatków:</h4>
               {localDish.addonGroups && localDish.addonGroups.length > 0 ? (
                 <div className="assigned-list">
-                  {localDish.addonGroups.map((addonGroup: any) => (
+                  {localDish.addonGroups.map((addonGroup: AddonGroup) => (
                       <div key={addonGroup.id} className="assigned-item">
                         <span>{addonGroup.name}</span>
                         <button 
@@ -292,11 +292,11 @@ export const DishEditPanel: React.FC<DishEditPanelProps> = ({
               {addonGroups.length > 0 ? (
                 <div className="available-list">
                   {addonGroups
-                    .filter((group: any) => {
-                      const isAssigned = localDish?.addonGroups?.some((ag: any) => ag.id === group.id);
+                    .filter((group: AddonGroup) => {
+                      const isAssigned = localDish?.addonGroups?.some((ag: AddonGroup) => ag.id === group.id);
                       return !isAssigned;
                     })
-                    .map((addonGroup: any) => (
+                    .map((addonGroup: AddonGroup) => (
                       <div key={addonGroup.id} className="available-item">
                         <span>{addonGroup.name}</span>
                         <button 
