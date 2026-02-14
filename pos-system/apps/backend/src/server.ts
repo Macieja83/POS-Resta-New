@@ -1,6 +1,7 @@
 import path from 'path';
 import { createApp } from './app';
 import dotenv from 'dotenv';
+import { dlog } from './lib/logger';
 
 // Load .env from backend directory (works when started from monorepo root or from apps/backend)
 const backendDir = path.resolve(process.cwd(), 'apps', 'backend');
@@ -13,37 +14,34 @@ const PORT = parseInt(process.env.PORT || '4000', 10);
 // Initialize app asynchronously
 async function startServer() {
   try {
-    console.log('🚀 Starting backend server...');
-    console.log('📍 Environment:', process.env.NODE_ENV || 'development');
-    console.log('🔧 Port:', PORT);
+    dlog('🚀 Starting backend server...');
+    dlog('📍 Environment:', process.env.NODE_ENV || 'development');
+    dlog('🔧 Port:', PORT);
 
     const app = await createApp();
 
-    // Add debug middleware
+    // Add debug middleware (only when DEBUG_LOGS=1)
     app.use((req, _res, next) => {
-      console.log(`🔍 ${req.method} ${req.path}`);
+      dlog(`🔍 ${req.method} ${req.path}`);
       next();
     });
 
-    // For local development
-    if (process.env.NODE_ENV !== 'production') {
-      app.listen(PORT, '0.0.0.0', () => {
-        console.log('✅ Backend server started successfully!');
-        console.log(`🌐 Backend listening on port ${PORT} (all interfaces)`);
-        console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
-        console.log(`📊 Mobile access: http://172.20.10.4:${PORT}/api/health`);
-        console.log(`📋 API docs: http://localhost:${PORT}/api/orders`);
-        console.log('✅ Running with PostgreSQL database');
-      }).on('error', (err: any) => {
-        if (err.code === 'EADDRINUSE') {
-          console.error(`❌ Port ${PORT} is already in use!`);
-          console.error(`   Please stop the process using port ${PORT} or change PORT in .env`);
-        } else {
-          console.error('❌ Failed to start server:', err);
-        }
-        process.exit(1);
-      });
-    }
+    // Always listen when this file is executed as a server process.
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log('✅ Backend server started successfully!');
+      console.log(`🌐 Backend listening on port ${PORT} (all interfaces)`);
+      console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
+      console.log(`📋 API docs: http://localhost:${PORT}/api/orders`);
+    }).on('error', (err: unknown) => {
+      const e = err as { code?: string };
+      if (e.code === 'EADDRINUSE') {
+        console.error(`❌ Port ${PORT} is already in use!`);
+        console.error(`   Please stop the process using port ${PORT} or change PORT in .env`);
+      } else {
+        console.error('❌ Failed to start server:', err);
+      }
+      process.exit(1);
+    });
 
     return app;
   } catch (error) {
@@ -53,16 +51,16 @@ async function startServer() {
   }
 }
 
-// For local development - start server
-if (process.env.NODE_ENV !== 'production') {
+// Start server when executed directly (systemd / node dist/server.js)
+if (require.main === module) {
   startServer().catch((error) => {
     console.error('❌ Unhandled error in startServer:', error);
     process.exit(1);
   });
 }
 
-// For Vercel - export handler function
-module.exports = async (req: any, res: any) => {
+// For Vercel / serverless - export handler function
+module.exports = async (req: unknown, res: unknown) => {
   const app = await createApp();
-  return app(req, res);
+  return (app as unknown as (req: unknown, res: unknown) => unknown)(req, res);
 };
