@@ -2,7 +2,33 @@ import React, { useState } from 'react';
 import { Order } from '../../types/shared';
 import { ordersApi } from '../../api/orders';
 import { ReceiptPrinter } from './ReceiptPrinter';
-import { OrderItem, CustomerData } from '../../types/order';
+import { OrderItem } from '../../types/order';
+
+type CustomerFormData = {
+  name: string;
+  phone: string;
+  email?: string;
+  address?: {
+    street: string;
+    city: string;
+    postalCode: string;
+    comment?: string;
+    deliveryPrice?: number;
+    latitude?: number;
+    longitude?: number;
+  };
+  nip?: string;
+  orderSource?: string;
+  pickupType: 'dine_in' | 'takeaway' | 'delivery';
+  paymentMethod?: 'cash' | 'paid' | 'card';
+  printReceipt?: boolean;
+  deliveryType: 'asap' | 'scheduled';
+  promisedTime?: number;
+  customTime?: string;
+  scheduledDateTime?: string;
+  tableNumber?: string;
+  notes?: string;
+};
 import './OrderDetailView.css';
 
 interface OrderDetailViewProps {
@@ -105,25 +131,27 @@ export const OrderDetailView: React.FC<OrderDetailViewProps> = ({
     })) || [];
   };
 
-  const convertOrderToCustomerData = (order: Order): any => {
+  const convertOrderToCustomerData = (order: Order): CustomerFormData => {
     return {
+      // Note: CustomerData is used for ReceiptPrinter; we fill the fields we have.
+      // If CustomerData expands, adjust here.
       name: order.customer?.name || 'Brak nazwiska',
       phone: order.customer?.phone || 'Brak numeru telefonu',
       email: order.customer?.email || 'Brak emaila',
       pickupType: order.type === 'DELIVERY' ? 'delivery' : order.type === 'TAKEAWAY' ? 'takeaway' : 'dine_in',
-      address: order.delivery?.address ? {
-        id: order.delivery.address.id || '',
-        street: order.delivery.address.street,
-        city: order.delivery.address.city,
-        postalCode: order.delivery.address.postalCode || '',
-        latitude: order.delivery.address.latitude ? Number(order.delivery.address.latitude) : undefined,
-        longitude: order.delivery.address.longitude ? Number(order.delivery.address.longitude) : undefined
-      } : {
-        id: '',
-        street: '',
-        city: '',
-        postalCode: ''
-      },
+      address: order.delivery?.address
+        ? {
+            street: order.delivery.address.street,
+            city: order.delivery.address.city,
+            postalCode: order.delivery.address.postalCode || '',
+            latitude: order.delivery.address.latitude ? Number(order.delivery.address.latitude) : undefined,
+            longitude: order.delivery.address.longitude ? Number(order.delivery.address.longitude) : undefined
+          }
+        : {
+            street: '',
+            city: '',
+            postalCode: ''
+          },
       nip: '',
       orderSource: 'pos',
       tableNumber: order.tableNumber,
@@ -198,7 +226,7 @@ export const OrderDetailView: React.FC<OrderDetailViewProps> = ({
                         {/* Wyświetl dodatki jeśli istnieją */}
                         {item.addons && Array.isArray(item.addons) && item.addons.length > 0 && (
                           <div className="item-addons">
-                            {item.addons.map((addon: any, addonIndex: number) => (
+                            {item.addons.map((addon: { name?: string; price?: number; quantity?: number }, addonIndex: number) => (
                               <div key={addonIndex} className="addon-item">
                                 <span className="addon-name">+ {addon.name}</span>
                                 {addon.quantity > 1 && (
@@ -222,7 +250,7 @@ export const OrderDetailView: React.FC<OrderDetailViewProps> = ({
                       {/* Wyświetl usunięte składniki jeśli istnieją */}
                       {item.removedIngredients && Array.isArray(item.removedIngredients) && item.removedIngredients.length > 0 && (
                         <div className="item-removed-ingredients">
-                          {item.removedIngredients.map((ingredient: any, ingredientIndex: number) => (
+                          {item.removedIngredients.map((ingredient: { name?: string }, ingredientIndex: number) => (
                             <span key={ingredientIndex} className="removed-ingredient">- {ingredient.name}</span>
                           ))}
                         </div>
@@ -235,7 +263,7 @@ export const OrderDetailView: React.FC<OrderDetailViewProps> = ({
                               <span className="half-label">Lewa: {item.leftHalf.dishName}</span>
                               {item.leftHalf.addons && item.leftHalf.addons.length > 0 && (
                                 <div className="half-addons">
-                                  {item.leftHalf.addons.map((addon: any, addonIndex: number) => (
+                                  {item.leftHalf.addons.map((addon: { name?: string }, addonIndex: number) => (
                                     <span key={addonIndex} className="half-addon">+ {addon.name}</span>
                                   ))}
                                 </div>
@@ -247,7 +275,7 @@ export const OrderDetailView: React.FC<OrderDetailViewProps> = ({
                               <span className="half-label">Prawa: {item.rightHalf.dishName}</span>
                               {item.rightHalf.addons && item.rightHalf.addons.length > 0 && (
                                 <div className="half-addons">
-                                  {item.rightHalf.addons.map((addon: any, addonIndex: number) => (
+                                  {item.rightHalf.addons.map((addon: { name?: string }, addonIndex: number) => (
                                     <span key={addonIndex} className="half-addon">+ {addon.name}</span>
                                   ))}
                                 </div>

@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import type { Map as LeafletMap } from 'leaflet';
 import { useQuery } from '@tanstack/react-query';
 import { ordersApi } from '../../api/orders';
 import { settingsApi } from '../../api/settings';
@@ -16,9 +17,34 @@ interface MapViewProps {
 
 declare global {
   interface Window {
-    L: any;
+    L: unknown;
   }
 }
+
+type LeafletMapLike = {
+  setView: (center: [number, number], zoom: number) => LeafletMapLike;
+  remove: () => void;
+};
+
+type LeafletMarkerLike = {
+  addTo: (map: LeafletMapLike) => LeafletMarkerLike;
+  bindPopup: (html: string) => LeafletMarkerLike;
+  setIcon: (icon: unknown) => LeafletMarkerLike;
+  remove: () => void;
+};
+
+type LeafletLike = {
+  map: (el: HTMLElement) => LeafletMapLike;
+  tileLayer: (url: string, opts: { attribution: string }) => { addTo: (map: LeafletMapLike) => void };
+  marker: (center: [number, number], opts?: { title?: string }) => LeafletMarkerLike;
+  divIcon: (opts: { className?: string; html: string; iconSize: [number, number]; iconAnchor: [number, number] }) => unknown;
+};
+
+const getLeaflet = (): LeafletLike | null => {
+  const L = window.L;
+  if (typeof L !== 'object' || L === null) return null;
+  return L as unknown as LeafletLike;
+};
 
 export const MapView: React.FC<MapViewProps> = ({ 
   selectedOrder,
@@ -29,9 +55,9 @@ export const MapView: React.FC<MapViewProps> = ({
   onRestoreOrder
 }) => {
   const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<any>(null);
-  const markersRef = useRef<any[]>([]);
-  const driverMarkersRef = useRef<any[]>([]);
+  const mapInstanceRef = useRef<LeafletMapLike | null>(null);
+  const markersRef = useRef<Array<{ remove: () => void }>>([]);
+  const driverMarkersRef = useRef<Array<{ remove: () => void }>>([]);
 
   const { data: ordersWithGeo, error: ordersError } = useQuery({
     queryKey: ['orders-geo'],
@@ -73,7 +99,7 @@ export const MapView: React.FC<MapViewProps> = ({
   // Set up global functions for popup buttons
   useEffect(() => {
     if (onCancelOrder) {
-      (window as any).cancelOrder = (orderId: string) => {
+      (globalThis as unknown as Record<string, unknown>).cancelOrder = (orderId: string) => {
         const order = ordersWithGeo?.data?.find((o: Order) => o.id === orderId);
         if (order) {
           onCancelOrder(order);
@@ -82,7 +108,7 @@ export const MapView: React.FC<MapViewProps> = ({
     }
     
     if (onDeleteOrder) {
-      (window as any).deleteOrder = (orderId: string) => {
+      (globalThis as unknown as Record<string, unknown>).deleteOrder = (orderId: string) => {
         const order = ordersWithGeo?.data?.find((o: Order) => o.id === orderId);
         if (order) {
           onDeleteOrder(order);
@@ -91,7 +117,7 @@ export const MapView: React.FC<MapViewProps> = ({
     }
 
     if (onEditOrder) {
-      (window as any).editOrder = (orderId: string) => {
+      (globalThis as unknown as Record<string, unknown>).editOrder = (orderId: string) => {
         const order = ordersWithGeo?.data?.find((o: Order) => o.id === orderId);
         if (order) {
           onEditOrder(order);
@@ -100,7 +126,7 @@ export const MapView: React.FC<MapViewProps> = ({
     }
 
     if (onRestoreOrder) {
-      (window as any).restoreOrder = (orderId: string) => {
+      (globalThis as unknown as Record<string, unknown>).restoreOrder = (orderId: string) => {
         const order = ordersWithGeo?.data?.find((o: Order) => o.id === orderId);
         if (order) {
           onRestoreOrder(order);
@@ -110,10 +136,10 @@ export const MapView: React.FC<MapViewProps> = ({
 
     // Cleanup on unmount
     return () => {
-      delete (window as any).cancelOrder;
-      delete (window as any).deleteOrder;
-      delete (window as any).editOrder;
-      delete (window as any).restoreOrder;
+      delete (globalThis as unknown as Record<string, unknown>).cancelOrder;
+      delete (globalThis as unknown as Record<string, unknown>).deleteOrder;
+      delete (globalThis as unknown as Record<string, unknown>).editOrder;
+      delete (globalThis as unknown as Record<string, unknown>).restoreOrder;
     };
   }, [onCancelOrder, onDeleteOrder, onEditOrder, onRestoreOrder, ordersWithGeo]);
 
@@ -121,7 +147,7 @@ export const MapView: React.FC<MapViewProps> = ({
     if (!mapRef.current || mapInstanceRef.current) return;
 
     // Initialize map – zawsze, nawet bez ustawień firmy (użyj domyślnych współrzędnych)
-    const L = window.L;
+    const L = getLeaflet();
     if (!L) {
       console.error('Leaflet not loaded');
       return;
@@ -164,7 +190,7 @@ export const MapView: React.FC<MapViewProps> = ({
     // Add OpenStreetMap tiles
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors',
-    }).addTo(map);
+    }).addTo(map as unknown as LeafletMap);
 
     // Cleanup function
     return () => {
@@ -184,13 +210,13 @@ export const MapView: React.FC<MapViewProps> = ({
       return;
     }
 
-    const L = window.L;
+    const L = getLeaflet();
     if (!L) return;
 
     const map = mapInstanceRef.current;
 
     // Clear existing markers
-    markersRef.current.forEach(marker => marker.remove());
+    markersRef.current.forEach((marker) => marker.remove());
     markersRef.current = [];
 
     // Filter orders based on filterType
@@ -374,12 +400,21 @@ export const MapView: React.FC<MapViewProps> = ({
       return;
     }
 
+    type DriverLocation = {
+      latitude: number;
+      longitude: number;
+      driverName?: string;
+      isActive?: boolean;
+      orderId?: string;
+      timestamp?: string;
+    };
+
     // Add driver markers
     if (driverLocations && 'data' in driverLocations && Array.isArray(driverLocations.data)) {
       console.log('📍 Adding driver markers:', driverLocations.data.length);
       console.log('📍 Driver locations data:', JSON.stringify(driverLocations.data, null, 2));
       
-      driverLocations.data.forEach((driver: any) => {
+      (driverLocations.data as DriverLocation[]).forEach((driver) => {
         if (!driver) {
           console.log('📍 Skipping null driver');
           return;
@@ -420,7 +455,7 @@ export const MapView: React.FC<MapViewProps> = ({
 
         const driverMarker = L.marker([driver.latitude, driver.longitude], {
           title: `Kierowca: ${driver.driverName || 'Unknown'}`,
-        }).addTo(map);
+        }).addTo(map as unknown as LeafletMap);
 
         // Create driver popup
         const driverPopupContent = `
