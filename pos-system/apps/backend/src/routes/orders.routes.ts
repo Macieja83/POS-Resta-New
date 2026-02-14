@@ -3,7 +3,7 @@ import { OrdersController } from '../controllers/orders.controller';
 import { OrdersService } from '../services/orders.service';
 import { OrdersRepository } from '../repos/orders.repo';
 import { EmployeesRepository } from '../repos/employees.repo';
-import { prisma, useMockData } from '../lib/database';
+import { prisma } from '../lib/database';
 import { verifyToken, verifyTokenOptional } from '../middlewares/auth';
 
 export function createOrdersRouter() {
@@ -57,7 +57,7 @@ export function createOrdersRouter() {
   router.get('/test/available', ordersController.getAvailableOrders.bind(ordersController));
   router.get('/test/my-orders', (req, res, next) => {
     // Mock user for testing
-    (req as any).user = { id: '1', email: 'ihor@restaurant.com', role: 'DRIVER' };
+    req.user = { id: '1', email: 'ihor@restaurant.com', role: 'DRIVER' };
     ordersController.getMyOrders(req, res, next);
   });
   
