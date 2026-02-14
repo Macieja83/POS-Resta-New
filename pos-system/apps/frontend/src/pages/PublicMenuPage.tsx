@@ -131,7 +131,7 @@ const PublicMenuPage: React.FC = () => {
 
   // Create order mutation
   const createOrderMutation = useMutation({
-    mutationFn: async (orderData: any) => {
+    mutationFn: async (orderData: unknown) => {
       const response = await fetch('/api/orders/public', {
         method: 'POST',
         headers: {
