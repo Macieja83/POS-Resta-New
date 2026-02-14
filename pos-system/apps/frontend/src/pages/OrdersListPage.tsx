@@ -31,6 +31,19 @@ interface OrdersListPageProps {
   setShowOrderCreator?: (show: boolean) => void;
 }
 
+type OrdersQueryData = {
+  data?: {
+    orders?: Order[];
+  };
+  [key: string]: unknown;
+};
+
+type OrdersApiResponse<T> = {
+  success?: boolean;
+  data?: T;
+  error?: string;
+};
+
 const OrdersListPageComponent: React.FC<OrdersListPageProps> = ({
   showHistorical: propShowHistorical = false,
   showOrderCreator: propShowOrderCreator = false,
@@ -54,7 +67,8 @@ const OrdersListPageComponent: React.FC<OrdersListPageProps> = ({
   // Lokalny stan dla wyszukiwania - całkowicie niezależny od globalnego stanu
   const [localSearch, setLocalSearch] = useState('');
   const [appliedSearch, setAppliedSearch] = useState('');
-  const [searchBy, setSearchBy] = useState<'all' | 'address' | 'customer' | 'dish' | 'price' | 'phone'>('all');
+  type SearchBy = 'all' | 'address' | 'customer' | 'dish' | 'price' | 'phone';
+  const [searchBy, setSearchBy] = useState<SearchBy>('all');
   const [sortBy, setSortBy] = useState<'createdAt' | 'total' | 'orderNumber'>('createdAt');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [pendingModalOrder, setPendingModalOrder] = useState<Order | null>(null);
@@ -69,17 +83,17 @@ const OrdersListPageComponent: React.FC<OrdersListPageProps> = ({
 
   // Usunięto handleOrderCreated - używamy tylko globalnego event listenera
 
-  const handleOrderUpdated = (updatedOrder: any) => {
+  const handleOrderUpdated = (updatedOrder: Order) => {
     // Natychmiastowa aktualizacja cache
     queryClient.setQueriesData(
       { queryKey: ['orders'] },
-      (oldData: any) => {
+      (oldData: OrdersQueryData | undefined) => {
         if (!oldData?.data?.orders) return oldData;
         return {
           ...oldData,
           data: {
             ...oldData.data,
-            orders: oldData.data.orders.map((order: any) => 
+            orders: oldData.data.orders.map((order) =>
               order.id === updatedOrder.id ? updatedOrder : order
             )
           }
@@ -99,34 +113,34 @@ const OrdersListPageComponent: React.FC<OrdersListPageProps> = ({
   // Cancel order mutation - zoptymalizowane
   const cancelOrderMutation = useMutation({
     mutationFn: ordersApi.cancelOrder,
-    onSuccess: (response) => {
+    onSuccess: (response: OrdersApiResponse<Order>) => {
       // Natychmiastowa aktualizacja cache
       if (response.data) {
         queryClient.setQueriesData(
           { queryKey: ['orders'] },
-          (oldData: any) => {
+          (oldData: OrdersQueryData | undefined) => {
             if (!oldData?.data?.orders) return oldData;
             return {
               ...oldData,
               data: {
                 ...oldData.data,
-                orders: oldData.data.orders.map((order: any) => 
-                  order.id === response.data.id ? response.data : order
+                orders: oldData.data.orders.map((order) =>
+                  order.id === response.data!.id ? response.data! : order
                 )
               }
             };
           }
         );
       }
-      
+
       // Cichy refetch w tle
       setTimeout(() => {
-        queryClient.invalidateQueries({ 
+        queryClient.invalidateQueries({
           queryKey: ['orders'],
           refetchType: 'none'
         });
       }, 1000);
-      
+
       alert('Zamówienie zostało anulowane');
     },
     onError: (error) => {
@@ -139,34 +153,34 @@ const OrdersListPageComponent: React.FC<OrdersListPageProps> = ({
   // Restore order mutation - zoptymalizowane
   const restoreOrderMutation = useMutation({
     mutationFn: ordersApi.restoreOrder,
-    onSuccess: (response) => {
+    onSuccess: (response: OrdersApiResponse<Order>) => {
       // Natychmiastowa aktualizacja cache
       if (response.data) {
         queryClient.setQueriesData(
           { queryKey: ['orders'] },
-          (oldData: any) => {
+          (oldData: OrdersQueryData | undefined) => {
             if (!oldData?.data?.orders) return oldData;
             return {
               ...oldData,
               data: {
                 ...oldData.data,
-                orders: oldData.data.orders.map((order: any) => 
-                  order.id === response.data.id ? response.data : order
+                orders: oldData.data.orders.map((order) =>
+                  order.id === response.data!.id ? response.data! : order
                 )
               }
             };
           }
         );
       }
-      
+
       // Cichy refetch w tle
       setTimeout(() => {
-        queryClient.invalidateQueries({ 
+        queryClient.invalidateQueries({
           queryKey: ['orders'],
           refetchType: 'none'
         });
       }, 1000);
-      
+
       alert('Zamówienie zostało przywrócone');
     },
     onError: (error) => {
@@ -177,11 +191,11 @@ const OrdersListPageComponent: React.FC<OrdersListPageProps> = ({
 
   const [showHistorical, setShowHistorical] = useState(propShowHistorical);
   const [showOrderCreator, setShowOrderCreator] = useState(propShowOrderCreator);
-  const [editOrder, setEditOrder] = useState<any>(null);
+  const [editOrder, setEditOrder] = useState<Order | null>(null);
   const [showStatusChangeModal, setShowStatusChangeModal] = useState(false);
-  const [statusChangeOrder, setStatusChangeOrder] = useState<any>(null);
+  const [statusChangeOrder, setStatusChangeOrder] = useState<Order | null>(null);
   const [showOrderDetail, setShowOrderDetail] = useState(false);
-  const [selectedOrderDetail, setSelectedOrderDetail] = useState<any>(null);
+  const [selectedOrderDetail, setSelectedOrderDetail] = useState<Order | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>(() => {
     // Domyślnie aktualna data
     const today = new Date();
@@ -191,10 +205,10 @@ const OrdersListPageComponent: React.FC<OrdersListPageProps> = ({
   // Globalne event listenery dla synchronizacji między stronami
   useEffect(() => {
     const handleOrderCreated = (event: CustomEvent) => {
-      const newOrder = event.detail;
+      const newOrder = event.detail as Order;
       queryClient.setQueriesData(
         { queryKey: ['orders'] },
-        (oldData: any) => {
+        (oldData: OrdersQueryData | undefined) => {
           if (!oldData?.data?.orders) return oldData;
           return {
             ...oldData,
@@ -208,16 +222,16 @@ const OrdersListPageComponent: React.FC<OrdersListPageProps> = ({
     };
 
     const handleOrderUpdated = (event: CustomEvent) => {
-      const updatedOrder = event.detail;
+      const updatedOrder = event.detail as Order;
       queryClient.setQueriesData(
         { queryKey: ['orders'] },
-        (oldData: any) => {
+        (oldData: OrdersQueryData | undefined) => {
           if (!oldData?.data?.orders) return oldData;
           return {
             ...oldData,
             data: {
               ...oldData.data,
-              orders: oldData.data.orders.map((order: any) => 
+              orders: oldData.data.orders.map((order) =>
                 order.id === updatedOrder.id ? updatedOrder : order
               )
             }
@@ -252,16 +266,16 @@ const OrdersListPageComponent: React.FC<OrdersListPageProps> = ({
   };
 
   // Adjust status filter based on historical toggle
-  const effectiveStatus = showHistorical 
-    ? 'HISTORICAL' as any // Use string 'HISTORICAL' for historical view (shows both COMPLETED and CANCELLED)
-    : status; // For active orders, only show OPEN, IN_PROGRESS, READY by default
+  // For cache key we keep a stable marker, but for API filters we only send real OrderStatus values.
+  const effectiveStatusKey = showHistorical ? 'HISTORICAL' : status;
+  const effectiveStatusFilter = showHistorical ? undefined : status;
 
   // Domyślnie pokazuj wszystkie zamówienia jeśli nie ma filtra typu
   const effectiveType = type;
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['orders', { 
-      status: effectiveStatus, 
+      status: effectiveStatusKey, 
       type: effectiveType, 
       search: appliedSearch, 
       page, 
@@ -278,7 +292,7 @@ const OrdersListPageComponent: React.FC<OrdersListPageProps> = ({
       // For "in_progress" and "pending_acceptance" filters, we need to get all orders and filter on frontend
       if (effectiveType === 'in_progress' || effectiveType === 'pending_acceptance') {
         const filters = {
-          status: effectiveStatus || undefined,
+          status: effectiveStatusFilter,
           search: appliedSearch,
           page: 1,
           limit: 50,
@@ -289,7 +303,7 @@ const OrdersListPageComponent: React.FC<OrdersListPageProps> = ({
       
       // For other filters, use backend filtering
       const filters = { 
-        status: effectiveStatus || undefined, 
+        status: effectiveStatusFilter, 
         type: effectiveType === 'all' ? undefined : (effectiveType as OrderType), 
         search: appliedSearch, 
         page, 
@@ -325,35 +339,37 @@ const OrdersListPageComponent: React.FC<OrdersListPageProps> = ({
     
     // Apply "in_progress" filter - show only orders with assigned driver
     if (effectiveType === 'in_progress') {
-      orders = orders.filter((order: any) => 
-        order.assignedEmployee && order.assignedEmployee.id
+      orders = orders.filter(
+        (order: Order) => !!(order.assignedEmployee && order.assignedEmployee.id)
       );
     }
     
     // Apply "pending_acceptance" filter - show only orders that need acceptance
     if (effectiveType === 'pending_acceptance') {
-      orders = orders.filter((order: any) => isPendingStatus(order.status));
+      orders = orders.filter((order: Order) => isPendingStatus(order.status));
     }
 
     // Apply frontend search filtering (only when searchBy is not 'all')
     if (appliedSearch && searchBy !== 'all') {
-      orders = orders.filter((order: any) => {
+      orders = orders.filter((order: Order) => {
         const searchTerm = appliedSearch.toLowerCase();
-        
+
         switch (searchBy) {
           case 'address':
-            return order.delivery?.address?.street?.toLowerCase().includes(searchTerm) ||
-                   order.delivery?.address?.city?.toLowerCase().includes(searchTerm);
+            return (
+              order.delivery?.address?.street?.toLowerCase().includes(searchTerm) ||
+              order.delivery?.address?.city?.toLowerCase().includes(searchTerm)
+            );
           case 'customer':
-            return order.customer?.name?.toLowerCase().includes(searchTerm);
+            return !!order.customer?.name?.toLowerCase().includes(searchTerm);
           case 'phone':
-            return order.customer?.phone?.toLowerCase().includes(searchTerm);
+            return !!order.customer?.phone?.toLowerCase().includes(searchTerm);
           case 'dish':
-            return order.items?.some((item: any) => 
+            return !!order.items?.some((item) =>
               item.name?.toLowerCase().includes(searchTerm)
             );
           case 'price':
-            return order.total?.toString().includes(searchTerm);
+            return order.total?.toString().includes(searchTerm) ?? false;
           default:
             return true;
         }
@@ -361,7 +377,7 @@ const OrdersListPageComponent: React.FC<OrdersListPageProps> = ({
     }
 
     // Apply sorting
-    orders.sort((a: any, b: any) => {
+    orders.sort((a: Order, b: Order) => {
       let aValue, bValue;
       
       switch (sortBy) {
@@ -412,7 +428,7 @@ const OrdersListPageComponent: React.FC<OrdersListPageProps> = ({
     setShowOrderCreator(propShowOrderCreator);
   }, [propShowOrderCreator]);
 
-  const handleEditOrder = (order: any) => {
+  const handleEditOrder = (order: Order) => {
     // Sprawdź czy zamówienie jest historyczne
     const isHistoricalOrder = order.status === 'COMPLETED' || order.status === 'CANCELLED';
     
@@ -433,7 +449,7 @@ const OrdersListPageComponent: React.FC<OrdersListPageProps> = ({
     setShowOrderCreator(true);
   };
 
-  const handleEditFromDetail = (order: any) => {
+  const handleEditFromDetail = (order: Order) => {
     // Sprawdź czy zamówienie jest historyczne
     const isHistoricalOrder = order.status === 'COMPLETED' || order.status === 'CANCELLED';
     
@@ -457,7 +473,7 @@ const OrdersListPageComponent: React.FC<OrdersListPageProps> = ({
   };
 
 
-  const handleChangeStatusFromDetail = (order: any) => {
+  const handleChangeStatusFromDetail = (order: Order) => {
     // Sprawdź czy zamówienie jest historyczne
     const isHistoricalOrder = order.status === 'COMPLETED' || order.status === 'CANCELLED';
     
@@ -472,14 +488,14 @@ const OrdersListPageComponent: React.FC<OrdersListPageProps> = ({
   };
 
 
-  const handleCancelOrder = (order: any) => {
+  const handleCancelOrder = (order: Order) => {
     if (window.confirm(`Czy na pewno chcesz anulować zamówienie ${order.orderNumber}?`)) {
       cancelOrderMutation.mutate(order.id);
     }
   };
 
 
-  const handleRestoreOrder = (order: any) => {
+  const handleRestoreOrder = (order: Order) => {
     if (window.confirm(`Czy na pewno chcesz przywrócić zamówienie ${order.orderNumber}? Zamówienie wróci na listę aktywnych zamówień.`)) {
       restoreOrderMutation.mutate(order.id);
     }
@@ -500,7 +516,7 @@ const OrdersListPageComponent: React.FC<OrdersListPageProps> = ({
     return sortOrder === 'asc' ? '↑' : '↓';
   };
 
-  const getSearchByLabel = (type: string) => {
+  const _getSearchByLabel = (type: string) => {
     switch (type) {
       case 'all': return 'Wszystko';
       case 'address': return 'Adres';
@@ -574,7 +590,7 @@ const OrdersListPageComponent: React.FC<OrdersListPageProps> = ({
                 <label className="search-by-label">Wyszukaj po:</label>
                 <select
                   value={searchBy}
-                  onChange={(e) => setSearchBy(e.target.value as any)}
+                  onChange={(e) => setSearchBy(e.target.value as SearchBy)}
                   className="search-by-select"
                 >
                   <option value="all">Wszystko</option>
@@ -704,7 +720,7 @@ const OrdersListPageComponent: React.FC<OrdersListPageProps> = ({
             </div>
           ) : (
             <div className="orders-grid">
-              {filteredOrders.map((order: any) => (
+              {filteredOrders.map((order: Order) => (
                 <OrderItemRow
                   key={order.id}
                   order={order}
