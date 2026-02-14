@@ -2,10 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { employeesApi } from '../api/employees';
 
+type DriverSession = {
+  id: string;
+  name?: string;
+  role?: string;
+};
+
 export const DriverLocationPage: React.FC = () => {
   const [loginCode, setLoginCode] = useState('');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [driver, setDriver] = useState<any>(null);
+  const [driver, setDriver] = useState<DriverSession | null>(null);
   const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [isTracking, setIsTracking] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -22,16 +28,28 @@ export const DriverLocationPage: React.FC = () => {
         setError(null);
       }
     },
-    onError: (error: any) => {
-      setError('Błąd logowania: ' + (error.response?.data?.error || error.message));
+    onError: (error: unknown) => {
+      const message =
+        error && typeof error === 'object' && 'response' in error
+          ? ((error as { response?: { data?: { error?: string } } }).response?.data?.error ?? undefined)
+          : error instanceof Error
+            ? error.message
+            : undefined;
+      setError('Błąd logowania: ' + (message || 'Unknown error'));
     }
   });
 
   // Location update mutation
   const locationMutation = useMutation({
     mutationFn: employeesApi.updateDriverLocation,
-    onError: (error: any) => {
-      setError('Błąd aktualizacji lokalizacji: ' + (error.response?.data?.error || error.message));
+    onError: (error: unknown) => {
+      const message =
+        error && typeof error === 'object' && 'response' in error
+          ? ((error as { response?: { data?: { error?: string } } }).response?.data?.error ?? undefined)
+          : error instanceof Error
+            ? error.message
+            : undefined;
+      setError('Błąd aktualizacji lokalizacji: ' + (message || 'Unknown error'));
     }
   });
 

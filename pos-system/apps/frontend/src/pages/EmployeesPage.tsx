@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '../api/client';
+import type { Employee } from '../types/shared';
 
 export const EmployeesPage: React.FC = () => {
-  const [employees, setEmployees] = useState<any[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -10,8 +11,9 @@ export const EmployeesPage: React.FC = () => {
     const fetchEmployees = async () => {
       try {
         setLoading(true);
-        const data = await apiClient.get('/employees') as any;
-        setEmployees(data.data || []);
+        const data = (await apiClient.get('/employees')) as unknown;
+        const employeesData = (data as { data?: Employee[] }).data;
+        setEmployees(employeesData || []);
         setError(null);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unknown error');
@@ -30,7 +32,7 @@ export const EmployeesPage: React.FC = () => {
     <div>
       <h2>Employees</h2>
       <div style={{ display: 'grid', gap: '10px' }}>
-        {employees.map((employee: any) => (
+        {employees.map((employee) => (
           <div key={employee.id} style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '4px' }}>
             <h3>{employee.name}</h3>
             <p><strong>Email:</strong> {employee.email}</p>
