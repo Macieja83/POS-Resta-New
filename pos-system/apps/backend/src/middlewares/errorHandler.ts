@@ -138,21 +138,17 @@ export const asyncHandler = (
   };
 };
 
-type SafeParseResult<T> =
-  | { success: true; data: T }
-  | { success: false; error: { errors: Array<{ path: Array<string | number>; message: string }> } };
-
-type ZodLikeSchema<T> = {
-  safeParse: (data: unknown) => SafeParseResult<T>;
+type ZodSafeParseLike<T> = {
+  safeParse: (data: unknown) => { success: boolean; data?: T; error?: { errors: Array<{ path: Array<string | number>; message: string }> } };
 };
 
-export const validateRequest = <T>(schema: ZodLikeSchema<T>) => {
+export const validateRequest = <T>(schema: ZodSafeParseLike<T>) => {
   return (req: Request, _res: Response, next: NextFunction) => {
     try {
       const result = schema.safeParse(req.body);
 
       if (!result.success) {
-        const errors: ValidationError[] = result.error.errors.map((err) => ({
+        const errors: ValidationError[] = (result.error?.errors ?? []).map((err) => ({
           field: err.path.join('.'),
           message: err.message
         }));
@@ -161,7 +157,7 @@ export const validateRequest = <T>(schema: ZodLikeSchema<T>) => {
         return next(error);
       }
 
-      req.body = result.data;
+      req.body = result.data as unknown;
       next();
     } catch (error) {
       next(error);
@@ -169,13 +165,13 @@ export const validateRequest = <T>(schema: ZodLikeSchema<T>) => {
   };
 };
 
-export const validateQuery = <T>(schema: ZodLikeSchema<T>) => {
+export const validateQuery = <T>(schema: ZodSafeParseLike<T>) => {
   return (req: Request, _res: Response, next: NextFunction) => {
     try {
       const result = schema.safeParse(req.query);
 
       if (!result.success) {
-        const errors: ValidationError[] = result.error.errors.map((err) => ({
+        const errors: ValidationError[] = (result.error?.errors ?? []).map((err) => ({
           field: err.path.join('.'),
           message: err.message
         }));
@@ -184,7 +180,7 @@ export const validateQuery = <T>(schema: ZodLikeSchema<T>) => {
         return next(error);
       }
 
-      req.query = result.data;
+      req.query = result.data as unknown as Request['query'];
       next();
     } catch (error) {
       next(error);
@@ -192,13 +188,13 @@ export const validateQuery = <T>(schema: ZodLikeSchema<T>) => {
   };
 };
 
-export const validateParams = <T>(schema: ZodLikeSchema<T>) => {
+export const validateParams = <T>(schema: ZodSafeParseLike<T>) => {
   return (req: Request, _res: Response, next: NextFunction) => {
     try {
       const result = schema.safeParse(req.params);
 
       if (!result.success) {
-        const errors: ValidationError[] = result.error.errors.map((err) => ({
+        const errors: ValidationError[] = (result.error?.errors ?? []).map((err) => ({
           field: err.path.join('.'),
           message: err.message
         }));
@@ -207,7 +203,7 @@ export const validateParams = <T>(schema: ZodLikeSchema<T>) => {
         return next(error);
       }
 
-      req.params = result.data;
+      req.params = result.data as unknown as Request['params'];
       next();
     } catch (error) {
       next(error);

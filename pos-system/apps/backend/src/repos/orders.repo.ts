@@ -6,63 +6,68 @@ export class OrdersRepository {
   constructor(private prisma: PrismaClient) {}
 
   // Helper function to parse JSON fields in order items - optimized
-  private parseOrderItems(order: any): any {
+  private parseOrderItems<T extends { items?: unknown }>(order: T) {
     if (!order) return order;
-    
+
+    const typedOrder = order;
+
     // Ensure items is always an array (even if null/undefined)
-    if (!order.items) {
-      order.items = [];
+    if (!typedOrder.items) {
+      typedOrder.items = [];
     }
-    
-    if (Array.isArray(order.items)) {
+
+    if (Array.isArray(typedOrder.items)) {
       try {
-      order.items = order.items.map((item: any) => {
-          if (!item) return item;
-          
-        // Only parse JSON fields that exist and are strings
-        const parsedItem = { ...item };
-        
-        // Parse JSON strings
-        if (item.addons && typeof item.addons === 'string') {
-          parsedItem.addons = this.safeJsonParse(item.addons);
-        }
-        if (item.ingredients && typeof item.ingredients === 'string') {
-          parsedItem.ingredients = this.safeJsonParse(item.ingredients);
-        }
-        if (item.addedIngredients && typeof item.addedIngredients === 'string') {
-          parsedItem.addedIngredients = this.safeJsonParse(item.addedIngredients);
-        }
-        if (item.removedIngredients && typeof item.removedIngredients === 'string') {
-          parsedItem.removedIngredients = this.safeJsonParse(item.removedIngredients);
-        }
-        if (item.selectedSize && typeof item.selectedSize === 'string') {
-          parsedItem.selectedSize = this.safeJsonParse(item.selectedSize);
-        }
-        if (item.leftHalf && typeof item.leftHalf === 'string') {
-          parsedItem.leftHalf = this.safeJsonParse(item.leftHalf);
-        }
-        if (item.rightHalf && typeof item.rightHalf === 'string') {
-          parsedItem.rightHalf = this.safeJsonParse(item.rightHalf);
-        }
-        
-        // Normalize null arrays to empty arrays for API compatibility
-        if (parsedItem.addons === null) parsedItem.addons = [];
-        if (parsedItem.ingredients === null) parsedItem.ingredients = [];
-        if (parsedItem.addedIngredients === null) parsedItem.addedIngredients = [];
-        if (parsedItem.removedIngredients === null) parsedItem.removedIngredients = [];
-        
-        return parsedItem;
-      });
+        typedOrder.items = typedOrder.items.map((item: unknown) => {
+          if (!item || typeof item !== 'object') return item;
+
+          const typedItem = item as Record<string, unknown>;
+
+          // Only parse JSON fields that exist and are strings
+          const parsedItem: Record<string, unknown> = { ...typedItem };
+
+          // Parse JSON strings
+          if (typeof typedItem.addons === 'string') {
+            parsedItem.addons = this.safeJsonParse(typedItem.addons);
+          }
+          if (typeof typedItem.ingredients === 'string') {
+            parsedItem.ingredients = this.safeJsonParse(typedItem.ingredients);
+          }
+          if (typeof typedItem.addedIngredients === 'string') {
+            parsedItem.addedIngredients = this.safeJsonParse(typedItem.addedIngredients);
+          }
+          if (typeof typedItem.removedIngredients === 'string') {
+            parsedItem.removedIngredients = this.safeJsonParse(typedItem.removedIngredients);
+          }
+          if (typeof typedItem.selectedSize === 'string') {
+            parsedItem.selectedSize = this.safeJsonParse(typedItem.selectedSize);
+          }
+          if (typeof typedItem.leftHalf === 'string') {
+            parsedItem.leftHalf = this.safeJsonParse(typedItem.leftHalf);
+          }
+          if (typeof typedItem.rightHalf === 'string') {
+            parsedItem.rightHalf = this.safeJsonParse(typedItem.rightHalf);
+          }
+
+          // Normalize null arrays to empty arrays for API compatibility
+          if (parsedItem.addons === null) parsedItem.addons = [];
+          if (parsedItem.ingredients === null) parsedItem.ingredients = [];
+          if (parsedItem.addedIngredients === null) parsedItem.addedIngredients = [];
+          if (parsedItem.removedIngredients === null) parsedItem.removedIngredients = [];
+
+          return parsedItem;
+        });
       } catch (error) {
         console.error('Error parsing order items:', error);
         // Return order with original items if parsing fails
       }
     }
-    return order;
+
+    return typedOrder;
   }
 
   // Helper function to safely parse JSON - optimized
-  private safeJsonParse(value: string): any {
+  private safeJsonParse(value: string): unknown {
     if (!value || typeof value !== 'string') return null;
     
     try {
@@ -79,7 +84,7 @@ export class OrdersRepository {
   async findAll(filters: OrdersFilters, includeItems: boolean = false) {
     const { page = 1, limit = 20, status, type, assignedEmployeeId, dateFrom, dateTo, search } = filters;
 
-    const where: any = {};
+    const where: Record<string, unknown> = {};
 
     if (type) {
       where.type = type;
@@ -117,18 +122,18 @@ export class OrdersRepository {
 
     // Add date filters
     if (dateFrom || dateTo) {
-      where.createdAt = {};
+      where.createdAt = {} as Record<string, unknown>;
       if (dateFrom) {
         // Start of day for dateFrom
         const fromDate = new Date(dateFrom);
         fromDate.setHours(0, 0, 0, 0);
-        where.createdAt.gte = fromDate;
+        (where.createdAt as Record<string, unknown>).gte = fromDate;
       }
       if (dateTo) {
         // End of day for dateTo
         const toDate = new Date(dateTo);
         toDate.setHours(23, 59, 59, 999);
-        where.createdAt.lte = toDate;
+        (where.createdAt as Record<string, unknown>).lte = toDate;
       }
     }
 
@@ -195,7 +200,7 @@ export class OrdersRepository {
 
       // Only include items if specifically requested
       if (includeItems) {
-        (selectFields as any).items = {
+        (selectFields as unknown as { items?: unknown }).items = {
           select: {
             id: true,
             name: true,
@@ -232,14 +237,17 @@ export class OrdersRepository {
       let parsedOrders = orders;
       if (includeItems && orders && Array.isArray(orders)) {
         try {
-          parsedOrders = orders.map(order => {
+          type OrderRow = (typeof orders)[number];
+          type OrderRowWithItems = OrderRow & { items?: unknown };
+
+          parsedOrders = (orders as OrderRowWithItems[]).map((order) => {
             try {
               return this.parseOrderItems(order);
             } catch (error) {
-              console.error('Error parsing order items for order:', order?.id || 'unknown', error);
+              console.error('Error parsing order items for order:', (order as { id?: string }).id || 'unknown', error);
               return order; // Return original order if parsing fails
             }
-          });
+          }) as typeof orders;
         } catch (error) {
           console.error('Error parsing orders:', error);
           parsedOrders = orders; // Return original orders if parsing fails
@@ -825,12 +833,12 @@ export class OrdersRepository {
     const { dateFrom, dateTo, employeeId } = filters;
     
     // Build where clause
-    const where: any = {};
+    const where: Record<string, unknown> = {};
     
     if (dateFrom || dateTo) {
-      where.createdAt = {};
-      if (dateFrom) where.createdAt.gte = new Date(dateFrom);
-      if (dateTo) where.createdAt.lte = new Date(dateTo);
+      where.createdAt = {} as Record<string, unknown>;
+      if (dateFrom) (where.createdAt as Record<string, unknown>).gte = new Date(dateFrom);
+      if (dateTo) (where.createdAt as Record<string, unknown>).lte = new Date(dateTo);
     }
     
     if (employeeId) {
