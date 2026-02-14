@@ -13,7 +13,7 @@ import './OrderCreator.css';
 interface OrderCreatorProps {
   isOpen: boolean;
   onClose: () => void;
-  editOrder?: Order; // Zamówienie do edycji
+  editOrder?: Order | null; // Zamówienie do edycji
   onOrderCreated?: (order: Order) => void; // Callback dla nowego zamówienia
   onOrderUpdated?: (order: Order) => void; // Callback dla zaktualizowanego zamówienia
 }
