@@ -2,7 +2,7 @@ import { vi } from 'vitest';
 import '@testing-library/jest-dom';
 
 // Mock Leaflet
-global.L = {
+const leafletMock = {
   map: vi.fn(() => ({
     setView: vi.fn().mockReturnThis(),
     addTo: vi.fn().mockReturnThis(),
@@ -23,4 +23,6 @@ global.L = {
   })),
   divIcon: vi.fn(() => ({})),
   icon: vi.fn(() => ({})),
-} as any;
+};
+
+(globalThis as unknown as { L: unknown }).L = leafletMock;
