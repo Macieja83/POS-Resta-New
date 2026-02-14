@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { ordersApi } from '../../api/orders';
-import { UpdateOrderRequest, OrderType, OrderItem, PaymentMethod } from '../../types/shared';
+import { UpdateOrderRequest, OrderType, OrderItem, PaymentMethod, Order } from '../../types/shared';
 import { menuApi, Dish as MenuItem } from '../../api/menu';
 import { geocodeAddress, searchAddressSuggestions, AddressSuggestion } from '../../utils/geocoding';
 import { AddressAutocomplete } from './AddressAutocomplete';
@@ -13,9 +13,9 @@ import './OrderCreator.css';
 interface OrderCreatorProps {
   isOpen: boolean;
   onClose: () => void;
-  editOrder?: any; // Zamówienie do edycji
-  onOrderCreated?: (order: any) => void; // Callback dla nowego zamówienia
-  onOrderUpdated?: (order: any) => void; // Callback dla zaktualizowanego zamówienia
+  editOrder?: Order | null; // Zamówienie do edycji
+  onOrderCreated?: (order: Order) => void; // Callback dla nowego zamówienia
+  onOrderUpdated?: (order: Order) => void; // Callback dla zaktualizowanego zamówienia
 }
 
 export const OrderCreator: React.FC<OrderCreatorProps> = ({ isOpen, onClose, editOrder, onOrderCreated, onOrderUpdated }) => {
@@ -119,7 +119,10 @@ export const OrderCreator: React.FC<OrderCreatorProps> = ({ isOpen, onClose, edi
         pickupType: editOrder.type === 'DELIVERY' ? 'delivery' : 
                    editOrder.type === 'TAKEAWAY' ? 'takeaway' : 
                    editOrder.type === 'DINE_IN' ? 'dine_in' : 'delivery',
-        paymentMethod: editOrder.paymentMethod || 'cash',
+        paymentMethod: editOrder.paymentMethod === PaymentMethod.CASH ? 'cash' :
+                       editOrder.paymentMethod === PaymentMethod.CARD ? 'card' :
+                       editOrder.paymentMethod === PaymentMethod.PAID ? 'paid' :
+                       'cash',
         printReceipt: true,
         deliveryType: 'asap',
         promisedTime: Math.max(editOrder.promisedTime || 30, 1),
@@ -131,7 +134,7 @@ export const OrderCreator: React.FC<OrderCreatorProps> = ({ isOpen, onClose, edi
       // Wypełnij pozycje zamówienia
       if (editOrder.items) {
         console.log('📦 Mapping editOrder.items:', editOrder.items);
-        setOrderItems(editOrder.items.map((item: any) => {
+        setOrderItems(editOrder.items.map((item: OrderItem) => {
           console.log('📦 Mapping item:', item);
           const mappedItem = {
             id: `${item.id || 'item'}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -251,6 +254,13 @@ export const OrderCreator: React.FC<OrderCreatorProps> = ({ isOpen, onClose, edi
     };
   }, []);
 
+  type OrdersQueryCache = {
+    data?: {
+      orders?: Array<{ id: string }>;
+      total?: number;
+    };
+  };
+
   const createOrderMutation = useMutation({
     mutationFn: ordersApi.createOrder,
     onSuccess: (response) => {
@@ -261,14 +271,15 @@ export const OrderCreator: React.FC<OrderCreatorProps> = ({ isOpen, onClose, edi
         // Natychmiastowa aktualizacja listy – nowe zamówienie w cache (bez refetch = bez opóźnienia)
         queryClient.setQueriesData(
           { queryKey: ['orders'] },
-          (old: any) => {
-            if (!old?.data?.orders || old.data.orders.some((o: any) => o.id === newOrder.id)) return old;
+          (old: unknown) => {
+            const oldCache = old as OrdersQueryCache | undefined;
+            if (!oldCache?.data?.orders || oldCache.data.orders.some((o) => o.id === newOrder.id)) return old;
             return {
-              ...old,
+              ...oldCache,
               data: {
-                ...old.data,
-                orders: [newOrder, ...old.data.orders],
-                total: (old.data.total ?? 0) + 1,
+                ...oldCache.data,
+                orders: [newOrder, ...oldCache.data.orders],
+                total: (oldCache.data.total ?? 0) + 1,
               },
             };
           }
@@ -286,7 +297,8 @@ export const OrderCreator: React.FC<OrderCreatorProps> = ({ isOpen, onClose, edi
   });
 
   const updateOrderMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateOrderRequest }) => ordersApi.updateOrder(id, data),
+    mutationFn: ({ id, data }: { id: string; data: Partial<UpdateOrderRequest> }) =>
+      ordersApi.updateOrder(id, data as UpdateOrderRequest),
     onSuccess: async (response) => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       queryClient.invalidateQueries({ queryKey: ['orders-geo'] });
@@ -623,7 +635,7 @@ export const OrderCreator: React.FC<OrderCreatorProps> = ({ isOpen, onClose, edi
   };
 
 
-  const handleAddonToggle = useCallback((addonId: string) => {
+  const _handleAddonToggle = useCallback((addonId: string) => {
     setSelectedAddons(prev => ({
       ...prev,
       [addonId]: !prev[addonId]
@@ -655,7 +667,7 @@ export const OrderCreator: React.FC<OrderCreatorProps> = ({ isOpen, onClose, edi
     setAddonCounts(prev => {
       const newCount = Math.max(0, (prev[addonId] || 0) - 1);
       if (newCount === 0) {
-        const { [addonId]: removed, ...rest } = prev;
+        const { [addonId]: _removed, ...rest } = prev;
         return rest;
       }
       return { ...prev, [addonId]: newCount };
@@ -666,7 +678,7 @@ export const OrderCreator: React.FC<OrderCreatorProps> = ({ isOpen, onClose, edi
     setFreeAddonCounts(prev => {
       const newCount = Math.max(0, (prev[addonId] || 0) - 1);
       if (newCount === 0) {
-        const { [addonId]: removed, ...rest } = prev;
+        const { [addonId]: _removed, ...rest } = prev;
         return rest;
       }
       return { ...prev, [addonId]: newCount };
@@ -992,11 +1004,11 @@ export const OrderCreator: React.FC<OrderCreatorProps> = ({ isOpen, onClose, edi
     setSelectedSize(size);
   };
 
-  const handleGoToSummary = () => {
+  const _handleGoToSummary = () => {
     setCurrentStep('summary');
   };
 
-  const handleBackToConfig = () => {
+  const _handleBackToConfig = () => {
     setCurrentStep('config');
   };
 
@@ -1424,7 +1436,7 @@ export const OrderCreator: React.FC<OrderCreatorProps> = ({ isOpen, onClose, edi
 
 
   // Function to handle address suggestion selection
-  const handleAddressSuggestionSelect = (suggestion: AddressSuggestion) => {
+  const _handleAddressSuggestionSelect = (suggestion: AddressSuggestion) => {
     setCustomerData(prev => ({
       ...prev,
       address: {
@@ -1454,7 +1466,7 @@ export const OrderCreator: React.FC<OrderCreatorProps> = ({ isOpen, onClose, edi
     };
   }, [searchTimeout]);
 
-  const handleCustomerDataChange = (field: string, value: any) => {
+  const handleCustomerDataChange = (field: string, value: string | number | boolean | undefined) => {
     if (field.startsWith('address.')) {
       const addressField = field.split('.')[1];
       setCustomerData(prev => ({
@@ -1467,8 +1479,8 @@ export const OrderCreator: React.FC<OrderCreatorProps> = ({ isOpen, onClose, edi
 
       // Auto-geocode when street or city changes
       if (addressField === 'street' || addressField === 'city') {
-        const newAddress = addressField === 'street' ? value : customerData.address.street;
-        const newCity = addressField === 'city' ? value : customerData.address.city;
+        const newAddress = addressField === 'street' ? String(value ?? '') : customerData.address.street;
+        const newCity = addressField === 'city' ? String(value ?? '') : customerData.address.city;
         
         // Search for address suggestions when typing in street field
         if (addressField === 'street') {
@@ -1609,10 +1621,10 @@ export const OrderCreator: React.FC<OrderCreatorProps> = ({ isOpen, onClose, edi
 
     if (editOrder) {
       // Aktualizacja istniejącego zamówienia
-      const { total, ...updateData } = orderData;
+      const { total: _total, ...updateData } = orderData;
       
       // Filtruj tylko zmienione pola
-      const changedData: any = {};
+      const changedData: Partial<UpdateOrderRequest> = {};
       
       // Zawsze wysyłaj type, customer, items, notes, tableNumber, promisedTime
       // bo to są podstawowe pola zamówienia
