@@ -281,9 +281,11 @@ export async function searchAddressSuggestions(query: string, city: string = 'SÅ
       return [];
     }
     
-    return data
-      .filter((item: any) => item.lat && item.lon)
-      .map((item: any) => ({
+    const results = data as unknown as Array<{ lat?: string; lon?: string; display_name?: string; address?: { house_number?: string; road?: string; city?: string; town?: string; village?: string; postcode?: string; country?: string } }>;
+
+    return results
+      .filter((item) => item.lat && item.lon)
+      .map((item) => ({
         displayName: item.display_name,
         address: {
           houseNumber: item.address?.house_number,
