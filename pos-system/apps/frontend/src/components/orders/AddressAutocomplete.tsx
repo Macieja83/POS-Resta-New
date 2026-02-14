@@ -133,16 +133,31 @@ export const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
-      const data = await response.json();
+      const data = (await response.json()) as unknown;
       console.log('Nominatim response:', data);
       
-      if (!data || data.length === 0) {
+      if (!Array.isArray(data) || data.length === 0) {
         return [];
       }
       
-      return data
-        .filter((item: any) => item.lat && item.lon)
-        .map((item: any) => ({
+      type NominatimItem = {
+        lat?: string;
+        lon?: string;
+        display_name?: string;
+        address?: {
+          house_number?: string;
+          road?: string;
+          city?: string;
+          town?: string;
+          village?: string;
+          postcode?: string;
+          country?: string;
+        };
+      };
+
+      return (data as NominatimItem[])
+        .filter((item) => item.lat && item.lon)
+        .map((item) => ({
           displayName: item.display_name,
           address: {
             houseNumber: item.address?.house_number,
@@ -191,18 +206,23 @@ export const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
-      const data = await response.json();
+      const data = (await response.json()) as unknown;
       console.log('Geocoding response:', data);
       
-      if (!data || data.length === 0) {
+      if (!Array.isArray(data) || data.length === 0) {
         return null;
       }
-      
-      const result = data[0];
+
+      type NominatimItem = {
+        lat?: string;
+        lon?: string;
+      };
+
+      const result = data[0] as NominatimItem;
       if (!result.lat || !result.lon) {
         return null;
       }
-      
+
       const latitude = parseFloat(result.lat);
       const longitude = parseFloat(result.lon);
       

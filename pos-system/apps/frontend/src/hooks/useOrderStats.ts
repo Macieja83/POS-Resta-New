@@ -28,7 +28,7 @@ export const useOrderCounts = () => {
     if (data?.success && Array.isArray(data.data)) {
       return data.data;
     }
-    return [] as any[];
+    return [] as unknown[];
   }, [data]);
 
   const counts = useMemo(() => {
@@ -43,10 +43,15 @@ export const useOrderCounts = () => {
 
     const pendingStatuses = new Set(['PENDING', 'PENDING_ACCEPTANCE']);
 
-    activeOrders.forEach((order: any) => {
+    activeOrders.forEach((order: unknown) => {
+      const typed = order as {
+        type?: string;
+        status?: string;
+        assignedEmployeeId?: string;
+      };
       result.all += 1;
 
-      switch (order.type) {
+      switch (typed.type) {
         case 'DELIVERY':
           result.DELIVERY += 1;
           break;
@@ -60,11 +65,11 @@ export const useOrderCounts = () => {
           break;
       }
 
-      if (order.assignedEmployeeId) {
+      if (typed.assignedEmployeeId) {
         result.in_progress += 1;
       }
 
-      const status = (order.status || '').toUpperCase();
+      const status = (typed.status || '').toUpperCase();
       if (pendingStatuses.has(status)) {
         result.pending_acceptance += 1;
       }
