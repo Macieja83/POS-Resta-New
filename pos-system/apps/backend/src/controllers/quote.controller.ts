@@ -40,7 +40,7 @@ export const calculateQuote = async (req: Request, res: Response) => {
       });
     }
 
-    const quote = await computeQuote(validatedData as any);
+    const quote = await computeQuote(validatedData as unknown);
 
     res.json(quote);
   } catch (error) {
