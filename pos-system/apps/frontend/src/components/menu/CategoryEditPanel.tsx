@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { MenuCategory } from '../../api/menu';
+import type { MenuCategory, Size } from '../../api/menu';
 
 interface CategoryEditPanelProps {
   selectedCategory: MenuCategory | null;
-  onUpdateCategory: (id: string, data: any) => void;
+  onUpdateCategory: (id: string, data: Partial<MenuCategory>) => void;
   onDeleteCategory: () => void;
   isUpdating: boolean;
   isDeleting: boolean;
@@ -128,7 +128,7 @@ export const CategoryEditPanel: React.FC<CategoryEditPanelProps> = ({
         <div className="form-group">
           <label>Rozmiary kategorii</label>
           <div className="sizes-list">
-            {selectedCategory.sizes?.map((size: any, index: any) => {
+            {selectedCategory.sizes?.map((size: Size | string, index: number) => {
               const sizeName = typeof size === 'string' ? size : size.name;
               const isEditing = editingSize === sizeName;
               
