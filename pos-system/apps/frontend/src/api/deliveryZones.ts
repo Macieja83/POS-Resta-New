@@ -33,7 +33,7 @@ export interface ApiResponse<T> {
   success: boolean;
   data?: T;
   message?: string;
-  errors?: any[];
+  errors?: unknown[];
 }
 
 export const deliveryZonesApi = {

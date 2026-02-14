@@ -246,7 +246,10 @@ export const menuApi = {
   },
 
   // Menu item sizes
-  updateMenuItemSizes: async (itemId: string, sizes: any[]) => {
+  updateMenuItemSizes: async (
+    itemId: string,
+    sizes: Array<{ name: string; price?: number }>
+  ) => {
     const response = await apiClient.put(`/menu/items/${itemId}/sizes`, { sizes });
     return response as { success: boolean; data: Dish };
   },

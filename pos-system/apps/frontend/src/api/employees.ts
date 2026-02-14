@@ -70,8 +70,8 @@ export const employeesApi = {
   },
 
   // Get driver locations
-  getDriverLocations: (): Promise<ApiResponse<any[]>> => {
-    return apiClient.get<ApiResponse<any[]>>('/employees/locations');
+  getDriverLocations: (): Promise<ApiResponse<unknown[]>> => {
+    return apiClient.get<ApiResponse<unknown[]>>('/employees/locations');
   },
 
   // Update driver location
@@ -79,7 +79,7 @@ export const employeesApi = {
     latitude: number;
     longitude: number;
     orderId?: string;
-  }): Promise<ApiResponse<any>> => {
-    return apiClient.post<ApiResponse<any>>('/employees/location', data);
+  }): Promise<ApiResponse<unknown>> => {
+    return apiClient.post<ApiResponse<unknown>>('/employees/location', data);
   },
 };

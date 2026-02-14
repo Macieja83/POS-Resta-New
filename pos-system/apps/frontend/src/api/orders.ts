@@ -230,7 +230,7 @@ export const ordersApi = {
       status?: string;
       paymentMethod?: string;
       completedBy?: { id?: string; name?: string; role?: string } | null;
-      [key: string]: any;
+      [key: string]: unknown;
     }
   ): Promise<ApiResponse<Order>> => {
     const body = { ...update };
