@@ -28,7 +28,7 @@ class MenuController {
         success: true,
         data: categoriesWithCount
       });
-    } catch (error) {
+    } catch { 
       res.status(500).json({
         success: false,
         error: "Błąd podczas pobierania kategorii"
@@ -61,7 +61,7 @@ class MenuController {
         success: true,
         data: newCategory
       });
-    } catch (error) {
+    } catch { 
       res.status(500).json({
         success: false,
         error: "Błąd podczas tworzenia kategorii"
@@ -83,7 +83,7 @@ class MenuController {
         success: true,
         data: updatedCategory
       });
-    } catch (error) {
+    } catch { 
       res.status(500).json({
         success: false,
         error: "Błąd podczas aktualizacji kategorii"
@@ -103,7 +103,7 @@ class MenuController {
         success: true,
         message: "Kategoria została usunięta"
       });
-    } catch (error) {
+    } catch { 
       res.status(500).json({
         success: false,
         error: "Błąd podczas usuwania kategorii"
@@ -204,7 +204,7 @@ class MenuController {
         success: true,
         data: items
       });
-    } catch (error) {
+    } catch { 
       res.status(500).json({
         success: false,
         error: "Błąd podczas pobierania pozycji menu"
@@ -234,7 +234,7 @@ class MenuController {
         success: true,
         data: newMenuItem
       });
-    } catch (error) {
+    } catch { 
       res.status(500).json({
         success: false,
         error: "Błąd podczas tworzenia pozycji menu"
@@ -256,7 +256,7 @@ class MenuController {
         success: true,
         data: updatedMenuItem
       });
-    } catch (error) {
+    } catch { 
       res.status(500).json({
         success: false,
         error: "Błąd podczas aktualizacji pozycji menu"
@@ -312,7 +312,7 @@ class MenuController {
         success: true,
         message: "Rozmiary pozycji menu zostały zaktualizowane"
       });
-    } catch (error) {
+    } catch { 
       res.status(500).json({
         success: false,
         error: "Błąd podczas aktualizacji rozmiarów pozycji menu"
@@ -332,7 +332,7 @@ class MenuController {
         success: true,
         message: "Pozycja menu została usunięta"
       });
-    } catch (error) {
+    } catch { 
       res.status(500).json({
         success: false,
         error: "Błąd podczas usuwania pozycji menu"
@@ -446,7 +446,7 @@ class MenuController {
           groupId: addonGroupId
         }
       });
-    } catch (error) {
+    } catch { 
       res.status(500).json({
         success: false,
         error: "Błąd podczas usuwania grupy dodatków z pozycji menu"
@@ -477,7 +477,7 @@ class MenuController {
         success: true,
         data: groupAssignment
       });
-    } catch (error) {
+    } catch { 
       res.status(500).json({
         success: false,
         error: "Błąd podczas przypisywania grupy dodatków do kategorii"
@@ -508,7 +508,7 @@ class MenuController {
         success: true,
         message: "Grupa dodatków została usunięta z kategorii"
       });
-    } catch (error) {
+    } catch { 
       res.status(500).json({
         success: false,
         error: "Błąd podczas usuwania grupy dodatków z kategorii"
@@ -541,7 +541,7 @@ class MenuController {
         success: true,
         data: newSize
       });
-    } catch (error) {
+    } catch { 
       res.status(500).json({
         success: false,
         error: "Błąd podczas dodawania rozmiaru"
@@ -575,7 +575,7 @@ class MenuController {
         success: true,
         message: "Rozmiar został usunięty"
       });
-    } catch (error) {
+    } catch { 
       res.status(500).json({
         success: false,
         error: "Błąd podczas usuwania rozmiaru"
@@ -635,7 +635,7 @@ class MenuController {
         data: updatedSize,
         message: "Rozmiar został zaktualizowany"
       });
-    } catch (error) {
+    } catch { 
       res.status(500).json({
         success: false,
         error: "Błąd podczas aktualizacji rozmiaru"
@@ -666,7 +666,7 @@ class MenuController {
         success: true,
         data: newIngredient
       });
-    } catch (error) {
+    } catch { 
       res.status(500).json({
         success: false,
         error: "Błąd podczas dodawania składnika"
@@ -686,7 +686,7 @@ class MenuController {
         success: true,
         message: "Składnik został usunięty"
       });
-    } catch (error) {
+    } catch { 
       res.status(500).json({
         success: false,
         error: "Błąd podczas usuwania składnika"
@@ -715,7 +715,7 @@ class MenuController {
         success: true,
         data: updatedIngredient
       });
-    } catch (error) {
+    } catch { 
       res.status(500).json({
         success: false,
         error: "Błąd podczas aktualizacji składnika"
@@ -736,7 +736,7 @@ class MenuController {
         success: true,
         data: addonGroups
       });
-    } catch (error) {
+    } catch { 
       res.status(500).json({
         success: false,
         error: "Błąd podczas pobierania grup dodatków"
@@ -764,7 +764,7 @@ class MenuController {
         success: true,
         data: items
       });
-    } catch (error) {
+    } catch { 
       res.status(500).json({
         success: false,
         error: "Błąd podczas pobierania dodatków"
@@ -792,7 +792,7 @@ class MenuController {
         success: true,
         data: categorySizes
       });
-    } catch (error) {
+    } catch { 
       res.status(500).json({
         success: false,
         error: "Błąd podczas pobierania rozmiarów"
@@ -829,7 +829,7 @@ class MenuController {
         success: true,
         data: addonGroups
       });
-    } catch (error) {
+    } catch { 
       res.status(500).json({
         success: false,
         error: "Błąd podczas pobierania grup dodatków dla kategorii"
@@ -866,7 +866,7 @@ class MenuController {
         success: true,
         data: addonGroups
       });
-    } catch (error) {
+    } catch { 
       res.status(500).json({
         success: false,
         error: "Błąd podczas pobierania grup dodatków dla pozycji menu"
@@ -900,7 +900,7 @@ class MenuController {
         success: true,
         data: newAddonGroup
       });
-    } catch (error) {
+    } catch { 
       res.status(500).json({
         success: false,
         error: "Błąd podczas tworzenia grupy dodatków"
@@ -925,7 +925,7 @@ class MenuController {
         success: true,
         data: updatedAddonGroup
       });
-    } catch (error) {
+    } catch { 
       res.status(500).json({
         success: false,
         error: "Błąd podczas aktualizacji grupy dodatków"
@@ -945,7 +945,7 @@ class MenuController {
         success: true,
         message: "Grupa dodatków została usunięta"
       });
-    } catch (error) {
+    } catch { 
       res.status(500).json({
         success: false,
         error: "Błąd podczas usuwania grupy dodatków"
@@ -980,7 +980,7 @@ class MenuController {
         success: true,
         data: newAddonItem
       });
-    } catch (error) {
+    } catch { 
       res.status(500).json({
         success: false,
         error: "Błąd podczas tworzenia dodatku"
@@ -990,7 +990,7 @@ class MenuController {
 
   updateAddonItem = async (req: Request, res: Response) => {
     try {
-      const { groupId, addonId } = req.params;
+      const { addonId } = req.params;
       const { name, price, isOnline, sortOrder } = req.body;
       
       const updatedAddonItem = await this.prisma.addonItem.update({
@@ -1002,7 +1002,7 @@ class MenuController {
         success: true,
         data: updatedAddonItem
       });
-    } catch (error) {
+    } catch { 
       res.status(500).json({
         success: false,
         error: "Błąd podczas aktualizacji dodatku"
@@ -1012,7 +1012,7 @@ class MenuController {
 
   deleteAddonItem = async (req: Request, res: Response) => {
     try {
-      const { groupId, addonId } = req.params;
+      const { addonId } = req.params;
       
       await this.prisma.addonItem.delete({
         where: { id: addonId }
@@ -1022,7 +1022,7 @@ class MenuController {
         success: true,
         message: "Dodatek został usunięty"
       });
-    } catch (error) {
+    } catch { 
       res.status(500).json({
         success: false,
         error: "Błąd podczas usuwania dodatku"
@@ -1057,7 +1057,7 @@ class MenuController {
         success: true,
         data: modifier
       });
-    } catch (error) {
+    } catch { 
       res.status(500).json({
         success: false,
         error: "Błąd podczas pobierania modyfikatora"
@@ -1110,7 +1110,7 @@ class MenuController {
         success: true,
         data: newModifier
       });
-    } catch (error) {
+    } catch { 
       res.status(500).json({
         success: false,
         error: "Błąd podczas tworzenia modyfikatora"
@@ -1139,7 +1139,7 @@ class MenuController {
         success: true,
         data: updatedModifier
       });
-    } catch (error) {
+    } catch { 
       res.status(500).json({
         success: false,
         error: "Błąd podczas aktualizacji modyfikatora"
@@ -1159,7 +1159,7 @@ class MenuController {
         success: true,
         message: "Modyfikator został usunięty"
       });
-    } catch (error) {
+    } catch { 
       res.status(500).json({
         success: false,
         error: "Błąd podczas usuwania modyfikatora"
@@ -1248,7 +1248,7 @@ class MenuController {
         success: true,
         data: categoriesWithItems
       });
-    } catch (error) {
+    } catch { 
       res.status(500).json({
         success: false,
         error: "Błąd podczas pobierania publicznego menu"
@@ -1295,7 +1295,7 @@ class MenuController {
       }));
 
       // Transform all dishes to items format expected by restaurant shop
-      const allItems: any[] = [];
+      const allItems: unknown[] = [];
       
       categories.forEach(category => {
         category.dishes.forEach(dish => {
