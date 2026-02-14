@@ -15,47 +15,69 @@ export class AppError extends Error {
   }
 }
 
-export const handleApiError = (error: any): AppError => {
-  // Handle different types of errors
-  if (error instanceof AppError) {
-    return error;
-  }
+type ErrorLike = {
+  message?: string;
+  stack?: string;
+  code?: string;
+  statusCode?: number;
+  errors?: ValidationError[];
+  response?: {
+    status?: number;
+    data?: {
+      error?: string;
+      message?: string;
+      errors?: ValidationError[];
+    };
+  };
+  request?: unknown;
+  config?: {
+    url?: string;
+    method?: string;
+  };
+};
 
-  if (error.response) {
-    // API error response
-    const { status, data } = error.response;
+const asErrorLike = (e: unknown): ErrorLike => (typeof e === 'object' && e !== null ? (e as ErrorLike) : {});
+
+export const handleApiError = (error: unknown): AppError => {
+  if (error instanceof AppError) return error;
+
+  const e = asErrorLike(error);
+
+  if (e.response) {
+    const status = e.response.status ?? 500;
+    const data = e.response.data;
     const message = data?.error || data?.message || 'API Error';
     const errors = data?.errors;
-    
+
     console.error('API Error Response:', {
       status,
       data,
-      url: error.config?.url,
-      method: error.config?.method,
+      url: e.config?.url,
+      method: e.config?.method,
       timestamp: new Date().toISOString()
     });
-    
+
     return new AppError(message, status, true, errors);
-  } else if (error.request) {
-    // Network error
-    console.error('Network Error:', {
-      message: error.message,
-      code: error.code,
-      url: error.config?.url,
-      timestamp: new Date().toISOString()
-    });
-    
-    return new AppError('Network error - please check your connection', 0, true);
-  } else {
-    // Other errors
-    console.error('Unexpected Error:', {
-      message: error.message,
-      stack: error.stack,
-      timestamp: new Date().toISOString()
-    });
-    
-    return new AppError(error.message || 'An unexpected error occurred', 500, true);
   }
+
+  if (e.request) {
+    console.error('Network Error:', {
+      message: e.message,
+      code: e.code,
+      url: e.config?.url,
+      timestamp: new Date().toISOString()
+    });
+
+    return new AppError('Network error - please check your connection', 0, true);
+  }
+
+  console.error('Unexpected Error:', {
+    message: e.message,
+    stack: e.stack,
+    timestamp: new Date().toISOString()
+  });
+
+  return new AppError(e.message || 'An unexpected error occurred', 500, true);
 };
 
 export const showErrorToast = (error: AppError | Error) => {
@@ -68,7 +90,7 @@ export const showErrorToast = (error: AppError | Error) => {
   alert(`Error: ${message}`);
 };
 
-export const handleError = (error: any, showToast: boolean = true) => {
+export const handleError = (error: unknown, showToast: boolean = true) => {
   const appError = handleApiError(error);
   
   if (showToast) {
@@ -78,12 +100,15 @@ export const handleError = (error: any, showToast: boolean = true) => {
   return appError;
 };
 
-export const validateFormData = (data: any, schema: any): { isValid: boolean; errors: ValidationError[] } => {
+export const validateFormData = (
+  data: unknown,
+  schema: { safeParse: (input: unknown) => { success: boolean; error?: { errors: Array<{ path: Array<string | number>; message: string }> } } }
+): { isValid: boolean; errors: ValidationError[] } => {
   try {
     const result = schema.safeParse(data);
     
     if (!result.success) {
-      const errors: ValidationError[] = result.error.errors.map((err: any) => ({
+      const errors: ValidationError[] = result.error.errors.map((err) => ({
         field: err.path.join('.'),
         message: err.message
       }));
@@ -104,67 +129,61 @@ export const formatValidationErrors = (errors: ValidationError[]): string => {
   return errors.map(err => `${err.field}: ${err.message}`).join(', ');
 };
 
-export const isNetworkError = (error: any): boolean => {
-  return error.code === 'NETWORK_ERROR' || 
-         error.message?.includes('Network Error') ||
-         error.message?.includes('fetch');
+export const isNetworkError = (error: unknown): boolean => {
+  const e = asErrorLike(error);
+  return e.code === 'NETWORK_ERROR' ||
+    e.message?.includes('Network Error') ||
+    e.message?.includes('fetch');
 };
 
-export const isAuthError = (error: any): boolean => {
-  return error.statusCode === 401 || 
-         error.statusCode === 403 ||
-         error.message?.includes('Unauthorized') ||
-         error.message?.includes('Forbidden');
+export const isAuthError = (error: unknown): boolean => {
+  const e = asErrorLike(error);
+  return e.statusCode === 401 ||
+    e.statusCode === 403 ||
+    e.message?.includes('Unauthorized') ||
+    e.message?.includes('Forbidden');
 };
 
-export const isValidationError = (error: any): boolean => {
-  return error.statusCode === 400 || 
-         error.errors?.length > 0 ||
-         error.message?.includes('Validation');
+export const isValidationError = (error: unknown): boolean => {
+  const e = asErrorLike(error);
+  return e.statusCode === 400 ||
+    (e.errors?.length ?? 0) > 0 ||
+    e.message?.includes('Validation');
 };
 
-export const isServerError = (error: any): boolean => {
-  return error.statusCode >= 500 || 
-         error.message?.includes('Internal Server Error') ||
-         error.message?.includes('Database');
+export const isServerError = (error: unknown): boolean => {
+  const e = asErrorLike(error);
+  return (e.statusCode ?? 0) >= 500 ||
+    e.message?.includes('Internal Server Error') ||
+    e.message?.includes('Database');
 };
 
-export const getErrorMessage = (error: any): string => {
-  if (error instanceof AppError) {
-    return error.message;
-  }
-  
-  if (error.response?.data?.error) {
-    return error.response.data.error;
-  }
-  
-  if (error.response?.data?.message) {
-    return error.response.data.message;
-  }
-  
-  if (error.message) {
-    return error.message;
-  }
-  
+export const getErrorMessage = (error: unknown): string => {
+  if (error instanceof AppError) return error.message;
+
+  const e = asErrorLike(error);
+
+  if (e.response?.data?.error) return e.response.data.error;
+  if (e.response?.data?.message) return e.response.data.message;
+  if (e.message) return e.message;
+
   return 'An unexpected error occurred';
 };
 
-export const getErrorStatus = (error: any): number => {
-  if (error instanceof AppError) {
-    return error.statusCode;
-  }
-  
-  if (error.response?.status) {
-    return error.response.status;
-  }
-  
+export const getErrorStatus = (error: unknown): number => {
+  if (error instanceof AppError) return error.statusCode;
+
+  const e = asErrorLike(error);
+  if (e.response?.status) return e.response.status;
+
   return 500;
 };
 
-export const getErrorDetails = (error: any): { message: string; status: number; errors?: ValidationError[] } => {
+export const getErrorDetails = (error: unknown): { message: string; status: number; errors?: ValidationError[] } => {
+  const e = asErrorLike(error);
   return {
     message: getErrorMessage(error),
     status: getErrorStatus(error),
-    errors: error.errors || error.response?.data?.errors
+    errors: e.errors || e.response?.data?.errors
   };
 };
