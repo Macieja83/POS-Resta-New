@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { employeesApi } from '../../api/employees';
 import { ordersApi } from '../../api/orders';
-import { Employee, Order } from '../../types/shared';
+import { Order } from '../../types/shared';
 import './DriverSelector.css';
 
 interface DriverSelectorProps {
@@ -13,10 +13,9 @@ interface DriverSelectorProps {
 export const DriverSelector: React.FC<DriverSelectorProps> = ({ order, onDriverAssigned }) => {
   const [assigning, setAssigning] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const queryClient = useQueryClient();
 
   // Zoptymalizowane - używa React Query dla cache'owania kierowców
-  const { data: driversData, isLoading: loading, error: driversError } = useQuery({
+  const { data: driversData, isLoading: loading } = useQuery({
     queryKey: ['drivers'],
     queryFn: () => employeesApi.getDrivers(),
     staleTime: 5 * 60 * 1000, // Cache przez 5 minut

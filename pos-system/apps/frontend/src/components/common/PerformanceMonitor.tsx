@@ -121,7 +121,7 @@ export const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({
 
 // Hook for performance monitoring
 export const usePerformanceMonitor = () => {
-  const [metrics, setMetrics] = useState<PerformanceMetrics>({
+  const [metrics] = useState<PerformanceMetrics>({
     renderTime: 0,
     memoryUsage: 0,
     networkRequests: 0,

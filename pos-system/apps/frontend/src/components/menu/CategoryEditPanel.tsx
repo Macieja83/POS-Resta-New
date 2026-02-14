@@ -91,9 +91,8 @@ export const CategoryEditPanel: React.FC<CategoryEditPanelProps> = ({
             type="text"
             value={selectedCategory.name}
             onChange={(e) => {
-              // Update local state - this would need to be handled by parent
-              const newName = e.target.value;
-              // This should trigger a local state update in parent
+              // TODO: this should trigger a local state update in parent
+              void e;
             }}
             className="form-input"
           />

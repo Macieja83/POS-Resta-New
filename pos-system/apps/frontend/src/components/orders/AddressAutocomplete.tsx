@@ -168,7 +168,7 @@ export const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
   };
 
   // Funkcja do geocoding adresu
-  const geocodeAddress = async (address: string, city: string = 'Słupsk'): Promise<{ latitude: number; longitude: number } | null> => {
+  const geocodeAddress = async (address: string): Promise<{ latitude: number; longitude: number } | null> => {
     try {
       // Tłumacz polską nazwę ulicy na angielską
       const translatedAddress = translateStreetName(address.trim());
@@ -292,7 +292,7 @@ export const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
         setGeocodingError(null);
 
         try {
-          const coordinates = await geocodeAddress(value.street, value.city);
+          const coordinates = await geocodeAddress(value.street);
           if (coordinates) {
             onChange({
               ...value,

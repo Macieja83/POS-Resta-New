@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { settingsApi, CompanySettings, UpdateCompanySettingsRequest } from '../../api/settings';
+import { settingsApi, UpdateCompanySettingsRequest } from '../../api/settings';
 import { AddressAutocomplete } from '../orders/AddressAutocomplete';
 import './CompanySettingsForm.css';
 
