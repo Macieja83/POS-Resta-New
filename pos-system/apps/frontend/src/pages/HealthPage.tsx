@@ -3,7 +3,12 @@ import { healthApi } from '../api/client';
 import './HealthCheck.css';
 
 export const HealthPage: React.FC = () => {
-  const [health, setHealth] = useState<any>(null);
+  const [health, setHealth] = useState<{
+    status: string;
+    timestamp: string;
+    db: string;
+    environment: string;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
