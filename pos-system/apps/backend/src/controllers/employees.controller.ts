@@ -151,7 +151,7 @@ export class EmployeesController {
       if (email) {
         try {
           employee = await this.employeesService.getEmployeeByEmail(email);
-        } catch (emailError) {
+        } catch {
           console.log('Email login failed, trying loginCode...');
         }
       }
@@ -219,7 +219,10 @@ export class EmployeesController {
 
   async updateDriverLocation(req: Request, res: Response, next: NextFunction) {
     try {
-      const user = (req as any).user;
+      const user = req.user;
+      if (!user) {
+        return res.status(401).json({ success: false, error: 'Brak autoryzacji' });
+      }
       const { latitude, longitude, orderId } = req.body;
       
       console.log('📍 Driver location update request:', {
@@ -293,7 +296,10 @@ export class EmployeesController {
 
   async deactivateDriverLocation(req: Request, res: Response, next: NextFunction) {
     try {
-      const user = (req as any).user;
+      const user = req.user;
+      if (!user) {
+        return res.status(401).json({ success: false, error: 'Brak autoryzacji' });
+      }
       
       console.log('📍 Deactivating driver location:', {
         driverId: user.id,
