@@ -603,7 +603,7 @@ export class OrdersController {
   // EMPAPP specific methods
   async getOrderHistory(req: Request, res: Response, next: NextFunction) {
     try {
-      const user = (req as any).user;
+      const user = req.user;
       
       if (!user || !user.id) {
         return res.status(401).json({
@@ -658,26 +658,32 @@ export class OrdersController {
       
       console.log('📋 Raw orders from database (history):', {
         total: orders.orders.length,
-        sample: orders.orders.slice(0, 5).map((o: any) => ({
-          orderNumber: o?.orderNumber || 'N/A',
-          status: o?.status || 'N/A',
-          paymentMethod: o?.paymentMethod || 'N/A',
-          total: o?.total || 0,
-          assignedEmployeeId: o?.assignedEmployeeId || 'N/A'
-        }))
+        sample: orders.orders.slice(0, 5).map((o: unknown) => {
+          const typed = o as { orderNumber?: string; status?: unknown; paymentMethod?: unknown; total?: number; assignedEmployeeId?: string };
+          return {
+            orderNumber: typed.orderNumber || 'N/A',
+            status: typed.status || 'N/A',
+            paymentMethod: typed.paymentMethod || 'N/A',
+            total: typed.total || 0,
+            assignedEmployeeId: typed.assignedEmployeeId || 'N/A'
+          };
+        })
       });
       
       // Filter: Only include orders that have payment method (finalized orders)
       // These are orders that were delivered and payment was collected
       // Include CASH, CARD, and PAID (zapłacone)
-      const finalizedOrders = orders.orders.filter((o: any) => {
-        if (!o) return false;
-        const hasPayment = o.paymentMethod === 'CASH' || o.paymentMethod === 'CARD' || o.paymentMethod === 'PAID';
+      type FinalizedOrder = { paymentMethod?: string; total?: number; orderNumber?: string; status?: string };
+
+      const finalizedOrders = (orders.orders as unknown[]).filter((o: unknown) => {
+        const typed = o as FinalizedOrder;
+        if (!typed) return false;
+        const hasPayment = typed.paymentMethod === 'CASH' || typed.paymentMethod === 'CARD' || typed.paymentMethod === 'PAID';
         if (!hasPayment) {
           console.log('⚠️ History: Order without payment method:', {
-            orderNumber: o?.orderNumber || 'N/A',
-            status: o?.status || 'N/A',
-            paymentMethod: o?.paymentMethod || null
+            orderNumber: typed.orderNumber || 'N/A',
+            status: typed.status || 'N/A',
+            paymentMethod: typed.paymentMethod || null
           });
         }
         return hasPayment;
@@ -685,7 +691,7 @@ export class OrdersController {
       
       console.log('📋 Finalized orders (history, with payment):', {
         count: finalizedOrders.length,
-        sample: finalizedOrders.slice(0, 5).map((o: any) => ({
+        sample: finalizedOrders.slice(0, 5).map((o: FinalizedOrder) => ({
           orderNumber: o?.orderNumber || 'N/A',
           status: o?.status || 'N/A',
           paymentMethod: o?.paymentMethod || 'N/A',
@@ -709,9 +715,9 @@ export class OrdersController {
         paginated: paginatedOrders.length,
         page: Number(page),
         totalPages,
-        cashCount: finalizedOrders.filter((o: any) => o?.paymentMethod === 'CASH').length,
-        cardCount: finalizedOrders.filter((o: any) => o?.paymentMethod === 'CARD').length,
-        paidCount: finalizedOrders.filter((o: any) => o?.paymentMethod === 'PAID').length
+        cashCount: finalizedOrders.filter((o: FinalizedOrder) => o?.paymentMethod === 'CASH').length,
+        cardCount: finalizedOrders.filter((o: FinalizedOrder) => o?.paymentMethod === 'CARD').length,
+        paidCount: finalizedOrders.filter((o: FinalizedOrder) => o?.paymentMethod === 'PAID').length
       });
       
       res.json({
@@ -724,11 +730,11 @@ export class OrdersController {
           total: totalFinalized
         }
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ Error getting order history:', {
-        message: error?.message || 'Unknown error',
-        stack: error?.stack,
-        name: error?.name
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        name: error instanceof Error ? error.name : undefined
       });
       next(error);
     }
@@ -736,7 +742,7 @@ export class OrdersController {
 
   async getPaymentStats(req: Request, res: Response, next: NextFunction) {
     try {
-      const user = (req as any).user;
+      const user = req.user;
       
       console.log('📊 getPaymentStats called, user:', user?.id || 'no user');
       
@@ -760,7 +766,7 @@ export class OrdersController {
         limit: 1000,
         page: 1,
         assignedEmployeeId: user.id,
-        status: 'HISTORICAL' as any // This gets COMPLETED and CANCELLED
+        status: 'HISTORICAL' as unknown as OrderStatus // This gets COMPLETED and CANCELLED
       };
 
       let orders;
@@ -772,10 +778,10 @@ export class OrdersController {
           ordersType: typeof orders,
           ordersKeys: orders ? Object.keys(orders) : []
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('❌ Error calling getOrders for stats:', {
-          message: error?.message,
-          stack: error?.stack
+          message: error instanceof Error ? error.message : undefined,
+          stack: error instanceof Error ? error.stack : undefined
         });
         throw error;
       }
@@ -797,28 +803,34 @@ export class OrdersController {
       
       console.log('📊 Raw orders from database:', {
         total: orders.orders.length,
-        sample: orders.orders.slice(0, 5).map((o: any) => ({
-          orderNumber: o?.orderNumber || 'N/A',
-          status: o?.status || 'N/A',
-          paymentMethod: o?.paymentMethod || 'N/A',
-          total: o?.total || 0,
-          assignedEmployeeId: o?.assignedEmployeeId || 'N/A'
-        }))
+        sample: orders.orders.slice(0, 5).map((o: unknown) => {
+          const typed = o as { orderNumber?: string; status?: unknown; paymentMethod?: unknown; total?: number; assignedEmployeeId?: string };
+          return {
+            orderNumber: typed.orderNumber || 'N/A',
+            status: typed.status || 'N/A',
+            paymentMethod: typed.paymentMethod || 'N/A',
+            total: typed.total || 0,
+            assignedEmployeeId: typed.assignedEmployeeId || 'N/A'
+          };
+        })
       });
       
       // Filter: Only orders that have payment method (finalized orders)
       // These are orders that were delivered and payment was collected
       // Include CASH, CARD, and PAID (zapłacone)
-      const finalizedOrders = orders.orders.filter((o: any) => {
-        if (!o) return false;
+      type FinalizedOrder = { paymentMethod?: string; total?: number; orderNumber?: string; status?: string };
+
+      const finalizedOrders = (orders.orders as unknown[]).filter((o: unknown) => {
+        const typed = o as FinalizedOrder;
+        if (!typed) return false;
         // Include orders with payment method (CASH, CARD, or PAID)
         // These are orders that were completed with payment
-        const hasPayment = o.paymentMethod === 'CASH' || o.paymentMethod === 'CARD' || o.paymentMethod === 'PAID';
+        const hasPayment = typed.paymentMethod === 'CASH' || typed.paymentMethod === 'CARD' || typed.paymentMethod === 'PAID';
         if (!hasPayment) {
           console.log('⚠️ Order without payment method:', {
-            orderNumber: o?.orderNumber || 'N/A',
-            status: o?.status || 'N/A',
-            paymentMethod: o?.paymentMethod || null
+            orderNumber: typed.orderNumber || 'N/A',
+            status: typed.status || 'N/A',
+            paymentMethod: typed.paymentMethod || null
           });
         }
         return hasPayment;
@@ -826,7 +838,7 @@ export class OrdersController {
       
       console.log('📊 Finalized orders (with payment):', {
         count: finalizedOrders.length,
-        sample: finalizedOrders.slice(0, 5).map((o: any) => ({
+        sample: finalizedOrders.slice(0, 5).map((o: FinalizedOrder) => ({
           orderNumber: o?.orderNumber || 'N/A',
           status: o?.status || 'N/A',
           paymentMethod: o?.paymentMethod || 'N/A',
@@ -835,18 +847,18 @@ export class OrdersController {
       });
       
       const cashOrders = Array.isArray(finalizedOrders)
-        ? finalizedOrders.filter((o: any) => o?.paymentMethod === 'CASH')
+        ? finalizedOrders.filter((o: FinalizedOrder) => o?.paymentMethod === 'CASH')
         : [];
       const cardOrders = Array.isArray(finalizedOrders)
-        ? finalizedOrders.filter((o: any) => o?.paymentMethod === 'CARD')
+        ? finalizedOrders.filter((o: FinalizedOrder) => o?.paymentMethod === 'CARD')
         : [];
       const paidOrders = Array.isArray(finalizedOrders)
-        ? finalizedOrders.filter((o: any) => o?.paymentMethod === 'PAID')
+        ? finalizedOrders.filter((o: FinalizedOrder) => o?.paymentMethod === 'PAID')
         : [];
       
-      const totalCash = cashOrders.reduce((sum: number, order: any) => sum + (order?.total || 0), 0);
-      const totalCard = cardOrders.reduce((sum: number, order: any) => sum + (order?.total || 0), 0);
-      const totalPaid = paidOrders.reduce((sum: number, order: any) => sum + (order?.total || 0), 0);
+      const totalCash = cashOrders.reduce((sum: number, order: FinalizedOrder) => sum + (order?.total || 0), 0);
+      const totalCard = cardOrders.reduce((sum: number, order: FinalizedOrder) => sum + (order?.total || 0), 0);
+      const totalPaid = paidOrders.reduce((sum: number, order: FinalizedOrder) => sum + (order?.total || 0), 0);
       
       const stats = {
         total: finalizedOrders.length,
@@ -856,7 +868,7 @@ export class OrdersController {
         totalCash: totalCash,
         totalCard: totalCard,
         totalPaid: totalPaid,
-        totalAmount: totalCash + totalCard + totalPaid
+        totalAmount: Number(totalCash) + Number(totalCard) + Number(totalPaid)
       };
       
       console.log('📊 Payment stats calculated:', {
@@ -867,7 +879,7 @@ export class OrdersController {
           totalCash,
           totalCard
         },
-        sampleOrders: finalizedOrders.slice(0, 3).map((o: any) => ({
+        sampleOrders: finalizedOrders.slice(0, 3).map((o: FinalizedOrder) => ({
           orderNumber: o?.orderNumber || 'N/A',
           status: o?.status || 'N/A',
           paymentMethod: o?.paymentMethod || 'N/A',
@@ -879,11 +891,11 @@ export class OrdersController {
         success: true,
         data: stats
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ Error getting payment stats:', {
-        message: error?.message || 'Unknown error',
-        stack: error?.stack,
-        name: error?.name
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        name: error instanceof Error ? error.name : undefined
       });
       next(error);
     }
