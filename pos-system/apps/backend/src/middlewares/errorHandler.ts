@@ -41,7 +41,12 @@ export const errorHandler = (
   } else if (error.name === 'CastError') {
     statusCode = 400;
     message = 'Invalid ID format';
-  } else if (error.name === 'MongoError' && (error as any).code === 11000) {
+  } else if (error.name === 'MongoError') {
+    const mongo = error as unknown as { code?: unknown };
+    if (mongo.code === 11000) {
+      statusCode = 409;
+      message = 'Duplicate field value';
+    }
     statusCode = 409;
     message = 'Duplicate field value';
   } else if (error.name === 'JsonWebTokenError') {
@@ -51,7 +56,7 @@ export const errorHandler = (
     statusCode = 401;
     message = 'Token expired';
   } else if (error.name === 'PrismaClientKnownRequestError') {
-    const prismaError = error as any;
+    const prismaError = error as unknown as { code?: string };
     if (prismaError.code === 'P2002') {
       statusCode = 409;
       message = 'Duplicate field value';
@@ -125,27 +130,37 @@ export const notFoundHandler = (req: Request, _res: Response, next: NextFunction
   next(error);
 };
 
-export const asyncHandler = (fn: Function) => {
-  return (req: Request, _res: Response, next: NextFunction) => {
-    Promise.resolve(fn(req, _res, next)).catch(next);
+export const asyncHandler = (
+  fn: (req: Request, res: Response, next: NextFunction) => unknown | Promise<unknown>
+) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    Promise.resolve(fn(req, res, next)).catch(next);
   };
 };
 
-export const validateRequest = (schema: any) => {
+type SafeParseResult<T> =
+  | { success: true; data: T }
+  | { success: false; error: { errors: Array<{ path: Array<string | number>; message: string }> } };
+
+type ZodLikeSchema<T> = {
+  safeParse: (data: unknown) => SafeParseResult<T>;
+};
+
+export const validateRequest = <T>(schema: ZodLikeSchema<T>) => {
   return (req: Request, _res: Response, next: NextFunction) => {
     try {
       const result = schema.safeParse(req.body);
-      
+
       if (!result.success) {
-        const errors: ValidationError[] = result.error.errors.map((err: any) => ({
+        const errors: ValidationError[] = result.error.errors.map((err) => ({
           field: err.path.join('.'),
           message: err.message
         }));
-        
+
         const error = new AppError('Validation failed', 400, true, errors);
         return next(error);
       }
-      
+
       req.body = result.data;
       next();
     } catch (error) {
@@ -154,21 +169,21 @@ export const validateRequest = (schema: any) => {
   };
 };
 
-export const validateQuery = (schema: any) => {
+export const validateQuery = <T>(schema: ZodLikeSchema<T>) => {
   return (req: Request, _res: Response, next: NextFunction) => {
     try {
       const result = schema.safeParse(req.query);
-      
+
       if (!result.success) {
-        const errors: ValidationError[] = result.error.errors.map((err: any) => ({
+        const errors: ValidationError[] = result.error.errors.map((err) => ({
           field: err.path.join('.'),
           message: err.message
         }));
-        
+
         const error = new AppError('Query validation failed', 400, true, errors);
         return next(error);
       }
-      
+
       req.query = result.data;
       next();
     } catch (error) {
@@ -177,21 +192,21 @@ export const validateQuery = (schema: any) => {
   };
 };
 
-export const validateParams = (schema: any) => {
+export const validateParams = <T>(schema: ZodLikeSchema<T>) => {
   return (req: Request, _res: Response, next: NextFunction) => {
     try {
       const result = schema.safeParse(req.params);
-      
+
       if (!result.success) {
-        const errors: ValidationError[] = result.error.errors.map((err: any) => ({
+        const errors: ValidationError[] = result.error.errors.map((err) => ({
           field: err.path.join('.'),
           message: err.message
         }));
-        
+
         const error = new AppError('Parameter validation failed', 400, true, errors);
         return next(error);
       }
-      
+
       req.params = result.data;
       next();
     } catch (error) {
