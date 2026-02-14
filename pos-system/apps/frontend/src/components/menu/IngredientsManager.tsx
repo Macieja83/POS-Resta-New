@@ -1,14 +1,8 @@
 import React, { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { menuApi } from '../../api/menu';
+import type { Ingredient } from '../../api/menu';
 import './IngredientsManager.css';
-
-interface Ingredient {
-  id: string;
-  name: string;
-  createdAt: string;
-  updatedAt: string;
-}
 
 interface IngredientsManagerProps {
   itemId: string;
@@ -35,9 +29,13 @@ export const IngredientsManager: React.FC<IngredientsManagerProps> = ({
       setNewIngredientName('');
       queryClient.invalidateQueries({ queryKey: ['menu'] });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Błąd podczas dodawania składnika:', error);
-      alert(error.response?.data?.error || 'Błąd podczas dodawania składnika');
+      const message =
+        error && typeof error === 'object' && 'response' in error
+          ? ((error as { response?: { data?: { error?: string } } }).response?.data?.error ?? undefined)
+          : undefined;
+      alert(message || 'Błąd podczas dodawania składnika');
     }
   });
 
@@ -54,9 +52,13 @@ export const IngredientsManager: React.FC<IngredientsManagerProps> = ({
       setEditingName('');
       queryClient.invalidateQueries({ queryKey: ['menu'] });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Błąd podczas aktualizacji składnika:', error);
-      alert(error.response?.data?.error || 'Błąd podczas aktualizacji składnika');
+      const message =
+        error && typeof error === 'object' && 'response' in error
+          ? ((error as { response?: { data?: { error?: string } } }).response?.data?.error ?? undefined)
+          : undefined;
+      alert(message || 'Błąd podczas aktualizacji składnika');
     }
   });
 
@@ -67,9 +69,13 @@ export const IngredientsManager: React.FC<IngredientsManagerProps> = ({
       onIngredientsChange(updatedIngredients);
       queryClient.invalidateQueries({ queryKey: ['menu'] });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Błąd podczas usuwania składnika:', error);
-      alert(error.response?.data?.error || 'Błąd podczas usuwania składnika');
+      const message =
+        error && typeof error === 'object' && 'response' in error
+          ? ((error as { response?: { data?: { error?: string } } }).response?.data?.error ?? undefined)
+          : undefined;
+      alert(message || 'Błąd podczas usuwania składnika');
     }
   });
 
