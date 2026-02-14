@@ -77,7 +77,7 @@ export const PendingOrderModal: React.FC<PendingOrderModalProps> = ({
       const now = new Date();
       const targetDate = new Date(now.getTime() + minutesUntil * 60 * 1000);
 
-      const payload: Record<string, any> = {
+      const payload: { status: 'OPEN'; promisedTime: number; notes?: string } = {
         status: 'OPEN',
         promisedTime: minutesUntil,
       };
@@ -111,9 +111,9 @@ export const PendingOrderModal: React.FC<PendingOrderModalProps> = ({
         }
       }
     },
-    onError: (err: any) => {
-      const message = err?.message || 'Błąd podczas akceptacji zamówienia';
-      setError(message);
+    onError: (err: unknown) => {
+      const message = err instanceof Error ? err.message : undefined;
+      setError(message || 'Błąd podczas akceptacji zamówienia');
     }
   });
 
