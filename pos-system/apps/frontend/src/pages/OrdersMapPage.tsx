@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ordersApi } from '../api/orders';
-import { Order, PaymentMethod } from '../types/shared';
+import { Order, OrderItem, PaymentMethod } from '../types/shared';
 import { MapView } from '../components/map/MapView';
 import { OrderCreator } from '../components/orders/OrderCreator';
 import { OrderEditModal } from '../components/orders/OrderEditModal';
@@ -81,12 +81,12 @@ export const OrdersMapPage: React.FC = () => {
   const [selectedType, setSelectedType] = useState('all');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [showOrderCreator, setShowOrderCreator] = useState(false);
-  const [editOrder, setEditOrder] = useState<any>(null);
-  const [orders, setOrders] = useState<any[]>([]);
+  const [editOrder, setEditOrder] = useState<Order | null>(null);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [assigningDriverFor, setAssigningDriverFor] = useState<string | null>(null);
-  const [editingOrder, setEditingOrder] = useState<any>(null);
+  const [editingOrder, setEditingOrder] = useState<Order | null>(null);
   const [showStatusChangeModal, setShowStatusChangeModal] = useState(false);
-  const [statusChangeOrder, setStatusChangeOrder] = useState<any>(null);
+  const [statusChangeOrder, setStatusChangeOrder] = useState<Order | null>(null);
   const [showOrderDetail, setShowOrderDetail] = useState(false);
   const [selectedOrderDetail, setSelectedOrderDetail] = useState<Order | null>(null);
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
@@ -142,11 +142,11 @@ export const OrdersMapPage: React.FC = () => {
       }
       
       // Cicha aktualizacja cache - usuń anulowane zamówienie
-      queryClient.setQueryData(['orders-map'], (oldData: any) => {
+      queryClient.setQueryData(['orders-map'], (oldData: { data?: Order[] } | undefined) => {
         if (!oldData?.data) return oldData;
         return {
           ...oldData,
-          data: oldData.data.filter((order: any) => order.id !== response.data?.id)
+          data: (oldData.data || []).filter((order) => order.id !== response.data?.id)
         };
       });
       
@@ -177,7 +177,7 @@ export const OrdersMapPage: React.FC = () => {
       }
       
       // Cicha aktualizacja cache - dodaj przywrócone zamówienie
-      queryClient.setQueryData(['orders-map'], (oldData: any) => {
+      queryClient.setQueryData(['orders-map'], (oldData: { data?: Order[] } | undefined) => {
         if (!oldData?.data) return oldData;
         return {
           ...oldData,
@@ -236,21 +236,21 @@ export const OrdersMapPage: React.FC = () => {
       
       // Apply "in_progress" filter - show only orders with assigned driver
       if (selectedType === 'in_progress') {
-        filteredOrders = filteredOrders.filter((order: any) => 
-          order.assignedEmployeeId
+        filteredOrders = filteredOrders.filter(
+          (order: Order) => !!order.assignedEmployee?.id
         );
       }
       
       // Apply "pending_acceptance" filter - show only orders that need acceptance
       if (selectedType === 'pending_acceptance') {
-        filteredOrders = filteredOrders.filter((order: any) => 
+        filteredOrders = filteredOrders.filter((order: Order) => 
           isPendingStatus(order.status)
         );
       }
       
       // Apply type filter
       if (selectedType !== 'all' && selectedType !== 'in_progress' && selectedType !== 'pending_acceptance') {
-        filteredOrders = filteredOrders.filter((order: any) => 
+        filteredOrders = filteredOrders.filter((order: Order) => 
           order.type === selectedType
         );
       }
@@ -271,20 +271,20 @@ export const OrdersMapPage: React.FC = () => {
     const cachedData = queryClient.getQueryData(['orders-map']);
     if (cachedData && !data) {
       // Use cached data immediately if available
-      const cachedOrders = (cachedData as any)?.data || [];
+      const cachedOrders = ((cachedData as { data?: Order[] } | undefined)?.data) || [];
       let filteredOrders = cachedOrders;
       
       // Apply current filter to cached data
       if (selectedType === 'in_progress') {
-        filteredOrders = cachedOrders.filter((order: any) => 
-          order.assignedEmployeeId
+        filteredOrders = cachedOrders.filter(
+          (order: Order) => !!order.assignedEmployee?.id
         );
       } else if (selectedType === 'pending_acceptance') {
-        filteredOrders = cachedOrders.filter((order: any) => 
+        filteredOrders = cachedOrders.filter((order: Order) => 
           isPendingStatus(order.status)
         );
       } else if (selectedType !== 'all') {
-        filteredOrders = cachedOrders.filter((order: any) => 
+        filteredOrders = cachedOrders.filter((order: Order) => 
           order.type === selectedType
         );
       }
@@ -360,19 +360,19 @@ export const OrdersMapPage: React.FC = () => {
       });
       
       // Cicha aktualizacja cache
-      queryClient.setQueryData(['orders-map'], (oldData: any) => {
+      queryClient.setQueryData(['orders-map'], (oldData: { data?: Order[] } | undefined) => {
         if (!oldData?.data) return oldData;
         
         let updatedData = oldData.data;
         
         // Jeśli zamówienie zostało zakończone lub anulowane, usuń je
         if (updatedOrder.status === 'COMPLETED' || updatedOrder.status === 'CANCELLED') {
-          updatedData = oldData.data.filter((order: any) => order.id !== updatedOrder.id);
+          updatedData = oldData.data.filter((order: Order) => order.id !== updatedOrder.id);
         } else {
           // W przeciwnym razie zaktualizuj lub dodaj
-          const exists = oldData.data.find((order: any) => order.id === updatedOrder.id);
+          const exists = oldData.data.find((order: Order) => order.id === updatedOrder.id);
           if (exists) {
-            updatedData = oldData.data.map((order: any) => 
+            updatedData = oldData.data.map((order: Order) => 
               order.id === updatedOrder.id ? updatedOrder : order
             );
           } else {
@@ -396,7 +396,7 @@ export const OrdersMapPage: React.FC = () => {
       if (shouldShow) {
         setOrders(prevOrders => [newOrder, ...prevOrders]);
         
-        queryClient.setQueryData(['orders-map'], (oldData: any) => {
+        queryClient.setQueryData(['orders-map'], (oldData: { data?: Order[] } | undefined) => {
           if (!oldData?.data) return oldData;
           return {
             ...oldData,
@@ -419,7 +419,7 @@ export const OrdersMapPage: React.FC = () => {
     };
   }, [queryClient]);
 
-  // const handleOrderSelect = (order: any) => {
+  // const handleOrderSelect = (order: Order) => {
   //   setSelectedOrder(order);
   //   setSelectedOrderDetail(order);
   //   setShowOrderDetail(true);
@@ -435,7 +435,7 @@ export const OrdersMapPage: React.FC = () => {
     setEditOrder(null);
   };
 
-  const handleOrderUpdated = (updatedOrder: any) => {
+  const handleOrderUpdated = (updatedOrder: Order) => {
     // Natychmiastowa aktualizacja lokalnego stanu z inteligentnym filtrowaniem
     setOrders(prevOrders => {
       // Jeśli zamówienie zostało zakończone lub anulowane, usuń je z listy
@@ -474,19 +474,19 @@ export const OrdersMapPage: React.FC = () => {
     }
     
     // Cicha aktualizacja cache z inteligentnym filtrowaniem
-    queryClient.setQueryData(['orders-map'], (oldData: any) => {
+    queryClient.setQueryData(['orders-map'], (oldData: { data?: Order[] } | undefined) => {
       if (!oldData?.data) return oldData;
       
       let updatedData = oldData.data;
       
       // Jeśli zamówienie zostało zakończone lub anulowane, usuń je
       if (updatedOrder.status === 'COMPLETED' || updatedOrder.status === 'CANCELLED') {
-        updatedData = oldData.data.filter((order: any) => order.id !== updatedOrder.id);
+        updatedData = oldData.data.filter((order: Order) => order.id !== updatedOrder.id);
       } else {
         // W przeciwnym razie zaktualizuj lub dodaj
-        const exists = oldData.data.find((order: any) => order.id === updatedOrder.id);
+        const exists = oldData.data.find((order: Order) => order.id === updatedOrder.id);
         if (exists) {
-          updatedData = oldData.data.map((order: any) => 
+          updatedData = oldData.data.map((order: Order) => 
             order.id === updatedOrder.id ? updatedOrder : order
           );
         } else {
@@ -516,20 +516,20 @@ export const OrdersMapPage: React.FC = () => {
 
   // Usunięto handleOrderCreated - używamy tylko globalnego event listenera
 
-  const handleCancelOrder = (order: any) => {
+  const handleCancelOrder = (order: Order) => {
     if (window.confirm(`Czy na pewno chcesz anulować zamówienie ${order.orderNumber}?`)) {
       cancelOrderMutation.mutate(order.id);
     }
   };
 
 
-  const handleRestoreOrder = (order: any) => {
+  const handleRestoreOrder = (order: Order) => {
     if (window.confirm(`Czy na pewno chcesz przywrócić zamówienie ${order.orderNumber}? Zamówienie wróci na listę aktywnych zamówień.`)) {
       restoreOrderMutation.mutate(order.id);
     }
   };
 
-  const handleEditOrder = (order: any) => {
+  const handleEditOrder = (order: Order) => {
     if (isPendingStatus(order.status)) {
       setPendingModalOrder(order);
       setShowPendingModal(true);
@@ -566,7 +566,7 @@ export const OrdersMapPage: React.FC = () => {
     setAssigningDriverFor('bulk'); // Specjalna wartość dla bulk assign
   };
 
-  const handleEditFromDetail = (order: any) => {
+  const handleEditFromDetail = (order: Order) => {
     // Sprawdź czy zamówienie jest historyczne
     const isHistoricalOrder = order.status === 'COMPLETED' || order.status === 'CANCELLED';
     
@@ -587,7 +587,7 @@ export const OrdersMapPage: React.FC = () => {
     setShowOrderDetail(false); // Zamknij szczegóły zamówienia
   };
 
-  const handleChangeStatusFromDetail = (order: any) => {
+  const handleChangeStatusFromDetail = (order: Order) => {
     // Sprawdź czy zamówienie jest historyczne
     const isHistoricalOrder = order.status === 'COMPLETED' || order.status === 'CANCELLED';
     
@@ -607,15 +607,15 @@ export const OrdersMapPage: React.FC = () => {
 
   // Funkcje pomocnicze dla nowego designu
 
-  const getOrderItems = (order: any) => {
+  const getOrderItems = (order: Order) => {
     if (order.items && order.items.length > 0) {
       const items = order.items.slice(0, 2);
-      return items.map((item: any) => {
+      return items.map((item: OrderItem) => {
         let itemText = item.name || 'Produkt';
         
         // Dodaj dodatki jeśli istnieją
         if (item.addons && Array.isArray(item.addons) && item.addons.length > 0) {
-          const addonsText = item.addons.map((addon: any) => 
+          const addonsText = item.addons.map((addon) => 
             `+ ${addon.name}${addon.quantity > 1 ? ` x${addon.quantity}` : ''}`
           ).join(', ');
           itemText += ` (${addonsText})`;
@@ -637,8 +637,8 @@ export const OrdersMapPage: React.FC = () => {
     return 'Brak szczegółów';
   };
 
-  const getStatusButton = (order: any) => {
-    const status = order.status || 'NEW';
+  const getStatusButton = (order: Order) => {
+    const status: string = (order.status as unknown as string) || 'NEW';
     if (status === 'COMPLETED' || status === 'PAID') {
       return (
         <button className="status-btn paid">
@@ -657,7 +657,7 @@ export const OrdersMapPage: React.FC = () => {
     return null;
   };
 
-  const getActionButtons = (order: any) => {
+  const getActionButtons = (order: Order) => {
     return (
       <div className="action-buttons">
         {order.type === 'DELIVERY' && (
@@ -713,7 +713,7 @@ export const OrdersMapPage: React.FC = () => {
               <div className="empty-state">Brak zamówień</div>
             ) : (
               <>
-                {orders.map((order: any) => (
+                {orders.map((order: Order) => (
                 <div
                   key={order.id}
                   className={`order-row ${selectedOrder?.id === order.id ? 'selected' : ''} ${selectedOrders.has(order.id) ? 'checkbox-selected' : ''}`}
@@ -747,8 +747,12 @@ export const OrdersMapPage: React.FC = () => {
                   <div className="order-col client">
                     {(((order.promisedTime ?? 0) > 0) || ['OPEN', 'IN_PROGRESS', 'ASSIGNED', 'ON_THE_WAY', 'READY', 'PENDING', 'PENDING_ACCEPTANCE'].includes(order.status)) && (
                       <div>
-                        <CountdownTimer 
-                          createdAt={order.createdAt}
+                        <CountdownTimer
+                          createdAt={
+                            typeof order.createdAt === 'string'
+                              ? order.createdAt
+                              : order.createdAt.toISOString()
+                          }
                           promisedTime={order.promisedTime ?? 30}
                           status={order.status}
                         />
