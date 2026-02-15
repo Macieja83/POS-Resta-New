@@ -1,10 +1,9 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-// Wstrzykuj w buildzie pełny URL backendu (Vercel), żeby produkcja nie wołała relative /api (404).
-const productionApiBase =
-  process.env.VITE_API_URL?.trim()?.replace(/\/$/, '') ||
-  'https://pos-system-backend.vercel.app/api';
+// In production, default to same-origin `/api` (backend serves the frontend).
+// You can override with VITE_API_URL if you ever host API separately.
+const productionApiBase = process.env.VITE_API_URL?.trim()?.replace(/\/$/, '') || '';
 
 export default defineConfig({
   plugins: [react()],
