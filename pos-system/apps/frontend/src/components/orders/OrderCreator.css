@@ -30,6 +30,60 @@
   margin: auto;
 }
 
+/* Mobile: pełny ekran pod nawigacją + przewijanie */
+@media (max-width: 640px) {
+  .order-creator-overlay {
+    padding: 0;
+    align-items: stretch;
+    justify-content: stretch;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .order-creator-modal {
+    border-radius: 0;
+    max-width: 100vw;
+    height: calc(100vh - var(--modal-top, var(--nav-height, 10rem)));
+    max-height: none;
+  }
+
+  /* Nagłówek zawsze widoczny */
+  .order-creator-modal .modal-header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+
+  .order-creator-content {
+    flex-direction: column;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Kategorie jako pozioma lista */
+  .menu-categories-panel {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .categories-list {
+    display: flex;
+    flex-direction: row;
+    gap: 0.5rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 0.75rem;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .category-item {
+    margin-bottom: 0;
+    flex: 0 0 auto;
+    min-width: 160px;
+  }
+}
+
 .order-creator-modal .modal-header {
   flex-shrink: 0;
 }
