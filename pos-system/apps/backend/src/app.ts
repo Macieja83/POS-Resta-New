@@ -27,7 +27,26 @@ export async function createApp() {
   await initializeDatabase();
 
   // Security middleware
-  app.use(helmet());
+  // NOTE: We serve the frontend over plain HTTP for now (no domain/HTTPS yet).
+  // Default Helmet CSP adds `upgrade-insecure-requests` and HSTS headers which can break
+  // asset loading on http:// (browser upgrades subresources to https:// -> ERR_SSL_PROTOCOL_ERROR).
+  // Once we move to HTTPS (domain or Tailscale Funnel), we can tighten this again.
+  const defaultCsp = helmet.contentSecurityPolicy.getDefaultDirectives();
+  app.use(
+    helmet({
+      hsts: false,
+      contentSecurityPolicy: {
+        directives: {
+          ...defaultCsp,
+          // Allow Leaflet from CDN (current frontend build uses unpkg).
+          'script-src': ["'self'", 'https://unpkg.com'],
+          'style-src': ["'self'", 'https:', "'unsafe-inline'"],
+          // IMPORTANT: do NOT upgrade http subresources to https while site is served over http.
+          'upgrade-insecure-requests': null,
+        },
+      },
+    })
+  );
 
   // CORS: allow explicit list + any *.vercel.app (production + preview deployments)
   const explicitOrigins = process.env.NODE_ENV === 'production'
@@ -414,7 +433,8 @@ export async function createApp() {
   app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
   // Simple homepage
-  app.get('/', (_req, res) => {
+  // API info endpoint
+  app.get(process.env.NODE_ENV === 'production' ? '/api' : '/', (_req, res) => {
     res.json({
       message: 'POS System Backend API',
       version: '1.0.0',
@@ -453,6 +473,19 @@ export async function createApp() {
   // Upload routes
   app.post('/api/upload/image', upload.single('image'), uploadController.uploadImage);
   app.delete('/api/upload/image/:filename', uploadController.deleteImage);
+
+  // Serve frontend (production)
+  if (process.env.NODE_ENV === 'production') {
+    const frontendDist = path.resolve(process.cwd(), 'apps', 'frontend', 'dist');
+
+    // Serve static assets
+    app.use(express.static(frontendDist));
+
+    // SPA fallback (avoid hijacking API and uploads)
+    app.get(/^\/(?!api\/|uploads\/).*/, (_req, res) => {
+      res.sendFile(path.join(frontendDist, 'index.html'));
+    });
+  }
 
   // 404 handler
   app.use(notFoundHandler);
