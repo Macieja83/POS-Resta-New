@@ -41,6 +41,8 @@ export async function createApp() {
           // Allow Leaflet from CDN (current frontend build uses unpkg).
           'script-src': ["'self'", 'https://unpkg.com'],
           'style-src': ["'self'", 'https:', "'unsafe-inline'"],
+          // Allow fetching sourcemaps / assets from the Leaflet CDN (optional, reduces console noise)
+          'connect-src': ["'self'", 'https://unpkg.com'],
           // IMPORTANT: do NOT upgrade http subresources to https while site is served over http.
           'upgrade-insecure-requests': null,
         },
