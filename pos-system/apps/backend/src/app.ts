@@ -27,7 +27,26 @@ export async function createApp() {
   await initializeDatabase();
 
   // Security middleware
-  app.use(helmet());
+  // NOTE: We serve the frontend over plain HTTP for now (no domain/HTTPS yet).
+  // Default Helmet CSP adds `upgrade-insecure-requests` and HSTS headers which can break
+  // asset loading on http:// (browser upgrades subresources to https:// -> ERR_SSL_PROTOCOL_ERROR).
+  // Once we move to HTTPS (domain or Tailscale Funnel), we can tighten this again.
+  const defaultCsp = helmet.contentSecurityPolicy.getDefaultDirectives();
+  app.use(
+    helmet({
+      hsts: false,
+      contentSecurityPolicy: {
+        directives: {
+          ...defaultCsp,
+          // Allow Leaflet from CDN (current frontend build uses unpkg).
+          'script-src': ["'self'", 'https://unpkg.com'],
+          'style-src': ["'self'", 'https:', "'unsafe-inline'"],
+          // IMPORTANT: do NOT upgrade http subresources to https while site is served over http.
+          'upgrade-insecure-requests': null,
+        },
+      },
+    })
+  );
 
   // CORS: allow explicit list + any *.vercel.app (production + preview deployments)
   const explicitOrigins = process.env.NODE_ENV === 'production'
